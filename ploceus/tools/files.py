@@ -94,10 +94,10 @@ def mkdir(path, user=None, grp=None, mode=None,
     _('mkdir -p %s' % path, sudo_user=sudo_user)
 
     if (user and (owner(path) != user)) or (grp and (group(path) != grp)):
-        chown(dest, user, grp)
+        chown(path, user, grp)
 
     if mode and (mode(path) != mode):
-        chmod(dest, mode)
+        chmod(path, mode)
 
 
 def upload_file(dest, src=None, contents=None,
