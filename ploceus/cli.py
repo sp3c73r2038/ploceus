@@ -21,6 +21,8 @@ def usage():
     print('\t-g, --group           specify group of hosts in inventory')
     print('\t-P, --parallel        run task across hosts parallelly')
     print('\t-s, --sleep           sleep between two hosts')
+    print('\t-k, --disable-pubkey  do not use pubkey to connect')
+    print('\t-p, --password        use password to connect')
     print('\t--list-inventory      list all avaiable groups of hosts')
     print('\n')
 
@@ -37,6 +39,9 @@ class Ploceus(object):
         self.group = None
         self.parallel = False
         self.sleep = 0
+        self.disable_pubkey = False
+        self.password = None
+
 
 
     def run(self):
@@ -74,6 +79,11 @@ class Ploceus(object):
                 self.hosts += group_hosts['hosts']
                 extra_vars = group_hosts.get('vars')
 
+
+        if self.disable_pubkey and self.password is None:
+            raise ArgumentError(('--disable-pubkey required but '
+                                 'no --password provided.'))
+
         if self.task_name is None:
             raise ArgumentError(('Specify a task to run, please. '
                                  'You can use -l to list tasks.'))
@@ -90,6 +100,7 @@ class Ploceus(object):
 
         TaskRunner.run_task_with_hosts(task, self.hosts, self.parallel,
                                        sleep=self.sleep,
+                                       password=self.password,
                                        extra_vars=extra_vars)
 
 
@@ -145,6 +156,18 @@ class Ploceus(object):
         self.sleep = int(args.pop(0))
 
 
+    def set_disable_pubkey(self, args):
+        args.pop(0)
+
+        self.disable_pubkey = True
+
+
+    def set_password(self, args):
+        args.pop(0)
+
+        self.password = args.pop(0)
+
+
     def _handle_args(self, args):
         exit = False
 
@@ -193,7 +216,15 @@ class Ploceus(object):
                 self.set_sleep(args)
                 continue
 
-            if args[0].strip() in ('--list-inventory'):
+            if args[0].strip() in ('-k', '--disable-pubkey'):
+                self.set_disable_pubkey(args)
+                continue
+
+            if args[0].strip() in ('-p', '--password'):
+                self.set_password(args)
+                continue
+
+            if args[0].strip() in ('-I', '--list-inventory'):
                 args.pop(0)
                 self.should_list_inventory = True
                 continue

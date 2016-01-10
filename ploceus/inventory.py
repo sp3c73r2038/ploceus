@@ -15,6 +15,10 @@ class Inventory(object):
 
 
     def _load_inventory(self):
+
+        if self.inventory is None:
+            return
+
         self._groups = dict()
 
         inventory = self.inventory
@@ -45,6 +49,10 @@ class Inventory(object):
 
         if self._groups is None:
             self._load_inventory()
+
+        if self._groups is None:
+            return True
+
         return len(self._groups.keys()) <= 0
 
 
@@ -80,6 +88,8 @@ class Inventory(object):
             self._load_inventory()
         if self.empty:
             self.find_inventory()
+        if self.empty:
+            return {}
 
         host_vars = self._groups.get(hostname) or {}
         return host_vars

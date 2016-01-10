@@ -47,7 +47,7 @@ class SSHClient(object):
 
 
     def _auth_by_password(self, username, password):
-        pass
+        self._transport.auth_password(username, password)
 
 
     @property
@@ -80,7 +80,7 @@ class SSHClient(object):
                 identity = [os.path.expanduser('~/.ssh/id_rsa')]
             self._auto_auth(username, identity)
         else:
-            self._auth_by_password()
+            self._auth_by_password(username, password)
 
         if not self._transport.is_authenticated():
             raise RuntimeError('cannot authenticate')

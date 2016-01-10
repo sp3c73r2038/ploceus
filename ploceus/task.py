@@ -87,7 +87,11 @@ class Task(object):
         # connect to remote host
         client = SSHClient()
 
-        username = client.connect(hostname, username=self.ssh_user)
+        password = None
+        if 'password' in kwargs:
+            password = kwargs.pop('password')
+        username = client.connect(hostname, username=self.ssh_user,
+                                  password=password)
 
         # setting context
         context['sshclient'] = client
@@ -116,29 +120,33 @@ class Task(object):
 class TaskRunner(object):
 
     @staticmethod
-    def run_task_with_hosts(task, hosts, parallel=False, sleep=0, **kwargs):
+    def run_task_with_hosts(task, hosts, parallel=False,
+                            sleep=0, password=None, **kwargs):
+
         if parallel:
-            TaskRunner.run_task_concurrently(task, hosts, **kwargs)
+            TaskRunner.run_task_concurrently(task, hosts,
+                                             password=password, **kwargs)
         else:
             TaskRunner.run_task_single_thread(task, hosts,
-                                              sleep=sleep, **kwargs)
+                                              sleep=sleep,
+                                              password=password, **kwargs)
 
 
     @staticmethod
-    def run_task_single_thread(task, hosts, sleep=0, **kwargs):
+    def run_task_single_thread(task, hosts, sleep=0, password=None, **kwargs):
         for host in hosts:
-            task.run(host, **kwargs)
+            task.run(host, password=password, **kwargs)
             if sleep:
                 time.sleep(sleep)
 
 
     @staticmethod
-    def run_task_concurrently(task, hosts, **kwargs):
+    def run_task_concurrently(task, hosts, password=None, **kwargs):
         threads = list()
 
-        def thread_wrapper(task, host, **kwargs):
+        def thread_wrapper(task, host, password, **kwargs):
             try:
-                task.run(host, **kwargs)
+                task.run(host, password=password, **kwargs)
             except:
                 print('error when running task: %s, host: %s, kwargs: %s' %
                       (task, host, kwargs))
@@ -147,7 +155,7 @@ class TaskRunner(object):
         for host in hosts:
 
             t = threading.Thread(target=thread_wrapper,
-                                 args=(task, host,),
+                                 args=(task, host, password, ),
                                  kwargs=kwargs)
             t.start()
             threads.append(t)
