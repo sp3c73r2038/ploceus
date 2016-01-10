@@ -17,4 +17,4 @@ def user(name, uid, gid,
                           groups=groups, system=system)
 
     # ensure home directory exists, permission and mode.
-    files.directory(home, user=name, mode=mode, use_sudo=True)
+    files.directory(home, user=name, grp=gid, mode=mode, use_sudo=True)
