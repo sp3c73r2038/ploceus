@@ -88,7 +88,7 @@ class SSHClient(object):
         return username
 
 
-    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False):
+    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=True):
         chan = self._transport.open_session(timeout=timeout)
         if get_pty:
             chan.get_pty()
