@@ -17,8 +17,7 @@ def package(pkg, update=None, version=None):
 
 
 def packages(pkgs, update=False):
-    for pkg in pkgs:
-        package(pkg, update=update)
+    package(" ".join(pkgs), update=update)
 
 
 def uptodate_index(quiet=True, max_age=3600):
