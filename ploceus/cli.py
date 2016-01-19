@@ -2,12 +2,10 @@
 import sys
 
 from .commander import Commander
-from .context import ContextManager
+
 
 
 cmdr = Commander()
-context_manager = ContextManager()
-
 
 def main():
     cmdr.run()

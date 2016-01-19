@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from .cli import context_manager
 from .exceptions import RemoteCommandError
+from .runtime import context_manager
 
 
 def run(command):

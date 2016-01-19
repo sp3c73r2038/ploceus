@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from . import exceptions
-from .cli import cmdr, context_manager
+from .cli import cmdr
+from .runtime import context_manager, env
 from .ssh import SSHClient
 
 
 
 class Task(object):
 
-    def __init__(self, func):
+    def __init__(self, func, ssh_user=None):
         self.func = func
+        self.ssh_user = ssh_user
 
         module = func.__module__
         if module.lower() == 'ploceusfile':
@@ -26,16 +28,20 @@ class Task(object):
 
 
     def _run(self, hostname):
-        # TODO: hooks
+
         context = context_manager.get_context()
 
         # connect to remote host
         client = SSHClient()
-        client.connect(hostname)
+        client.connect(hostname, username=self.ssh_user)
 
         # setting context
         context['sshclient'] = client
         context['host_string'] = hostname
+
+        for f in env.pre_task_hooks:
+            if callable(f):
+                f(context)
 
         rv = None
         try:
@@ -45,6 +51,10 @@ class Task(object):
         except:
             import traceback
             traceback.print_exc()
+
+        for f in env.post_task_hooks:
+            if callable(f):
+                f(context)
 
         client.close()
 
