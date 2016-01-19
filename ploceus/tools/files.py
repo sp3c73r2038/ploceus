@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ploceus.runtime import context_manager
+from ploceus.runtime import context_manager, env
 from ploceus.helper import run, sudo
 
 
@@ -18,6 +18,10 @@ def is_symlink(path, use_sudo=None, sudo_user=None):
     return _('test -L %s' % path, sudo_user=sudo_user).succeeded
 
 
+def owner(path, use_sudo=None, sudo_user=None):
+    _ = (use_sudo and sudo) or run
+    out = _('stat -c %%U %s' % path, quiet=True).stdout.read().strip()
+    return out.decode(env.encoding)
 
 
 def upload_file(src, dest, owner=None, group=None, mode=None):
