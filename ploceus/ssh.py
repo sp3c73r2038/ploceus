@@ -10,6 +10,7 @@ class SSHClient(object):
 
     def __init__(self):
         self._transport = None
+        self._sftp = None
         self._sshconfig = paramiko.SSHConfig()
 
         self._read_ssh_config()
@@ -80,5 +81,13 @@ class SSHClient(object):
         return stdin, stdout, stderr, rc
 
 
+    def sftp(self):
+        if self._sftp:
+            return self._sftp
+        self._sftp = paramiko.sftp_client.SFTP.from_transport(self._transport)
+        return self._sftp
+
     def close(self):
         self._transport.close()
+        if self._sftp:
+            self._sftp.close()
