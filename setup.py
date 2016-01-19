@@ -8,5 +8,9 @@ setup(
     install_requires=[
         'pycrypto==2.4.1',
         'paramiko'
-    ]
+    ],
+    entry_points="""
+    [console_scripts]
+    ploceus=ploceus.cli:main
+"""
 )
