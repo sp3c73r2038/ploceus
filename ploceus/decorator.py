@@ -22,6 +22,6 @@ def task(*args, **kwargs):
         new_func.__name__ = func.__name__
         new_func.__module__ = func.__module__
 
-        return task_class(new_func)
+        return task_class(new_func, *args, **kwargs)
 
     return wrapper if invoked else wrapper(func)
