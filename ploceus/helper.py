@@ -7,7 +7,9 @@ __all__ = ['run', 'sudo']
 
 class CommandResult(object):
 
-    def __init__(self, value):
+    def __init__(self, stdout, stderr, value):
+        self.stdout = stdout
+        self.stderr = stderr
         self.value = value
 
 
@@ -21,22 +23,21 @@ class CommandResult(object):
         return self.value is 0
 
 
-
-def run(command, *args, **kwargs):
+def run(command, quiet=False, *args, **kwargs):
     # TODO: global sudo
-    _, _, _, rc = _run_command(command)
-    return CommandResult(rc)
+    _, stdout, stderr, rc = _run_command(command, quiet)
+    return CommandResult(stdout, stderr, rc)
 
 
-def sudo(command, sudo_user=None):
+def sudo(command, quiet=False, sudo_user=None):
     sudo_user = sudo_user or 'root'
 
     command = 'sudo -u %s -H -i %s' % (sudo_user, command)
-    _, _, _, rc =  _run_command(command)
-    return CommandResult(rc)
+    _, stdout, stderr, rc =  _run_command(command, quiet)
+    return CommandResult(stdout, stderr, rc)
 
 
-def _run_command(command):
+def _run_command(command, quiet=False):
     context = context_manager.get_context()
     client = context['sshclient']
     hostname = context['host_string']
@@ -44,12 +45,14 @@ def _run_command(command):
     stdin, stdout, stderr, rc = client.exec_command(command)
 
     if rc != 0:
-        for line in stderr:
-            print('[%s] %s' % (hostname, line.strip()))
+        if quiet is False:
+            for line in stderr:
+                print('[%s] %s' % (hostname, line.strip()))
 
         raise RemoteCommandError()
 
-    for line in stdout:
-        print('[%s] %s' % (hostname, line.strip()))
+    if quiet is False:
+        for line in stdout:
+            print('[%s] %s' % (hostname, line.strip()))
 
     return stdin, stdout, stderr, rc
