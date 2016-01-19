@@ -8,6 +8,18 @@ def is_file(path, use_sudo=None, sudo_user=None):
     return _('test -f %s' % path, sudo_user=sudo_user).succeeded
 
 
+def is_dir(path, use_sudo=None, sudo_user=None):
+    _ = (use_sudo and sudo) or run
+    return _('test -d %s' % path, sudo_user=sudo_user).succeeded
+
+
+def is_symlink(path, use_sudo=None, sudo_user=None):
+    _ = (use_sudo and sudo) or run
+    return _('test -L %s' % path, sudo_user=sudo_user).succeeded
+
+
+
+
 def upload_file(src, dest, owner=None, group=None, mode=None):
     ctx = context_manager.get_context()
     ssh = ctx['sshclient']
