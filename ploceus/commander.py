@@ -42,6 +42,9 @@ class Commander(object):
         # TODO: parallelism
         for host in self.hosts:
             task = self.tasks.get(self.task_name)
+            if task is None:
+                print('\n\tunknown task: %s\n' % self.task_name)
+                return
             task.run(host)
 
 
