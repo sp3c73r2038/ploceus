@@ -67,8 +67,10 @@ class SSHClient(object):
             raise RuntimeError('cannot authenticate')
 
 
-    def exec_command(self, command, bufsize=-1, timeout=None):
+    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False):
         chan = self._transport.open_session(timeout=timeout)
+        if get_pty:
+            chan.get_pty()
         chan.settimeout(timeout)
         chan.exec_command(command)
         stdin = chan.makefile('wb', bufsize)
