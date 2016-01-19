@@ -40,6 +40,14 @@ class SSHClient(object):
         pass
 
 
+    @property
+    def sftp(self):
+        if self._sftp:
+            return self._sftp
+        self._sftp = paramiko.sftp_client.SFTP.from_transport(self._transport)
+        return self._sftp
+
+
     def connect(self, hostname, username=None, password=None, port=22):
         sock = socket.socket(socket.AF_INET,
                              socket.SOCK_STREAM | socket.SOCK_CLOEXEC)
@@ -67,6 +75,8 @@ class SSHClient(object):
         if not self._transport.is_authenticated():
             raise RuntimeError('cannot authenticate')
 
+        return username
+
 
     def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False):
         chan = self._transport.open_session(timeout=timeout)
@@ -81,11 +91,13 @@ class SSHClient(object):
         return stdin, stdout, stderr, rc
 
 
-    def sftp(self):
-        if self._sftp:
-            return self._sftp
-        self._sftp = paramiko.sftp_client.SFTP.from_transport(self._transport)
-        return self._sftp
+    def put_file(self, src, dest):
+        self.sftp.put(src, dest)
+
+
+    def get_file(self, src, dest):
+        self.sftp.get(src, dest)
+
 
     def close(self):
         self._transport.close()

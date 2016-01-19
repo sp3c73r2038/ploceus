@@ -33,11 +33,13 @@ class Task(object):
 
         # connect to remote host
         client = SSHClient()
-        client.connect(hostname, username=self.ssh_user)
+
+        username = client.connect(hostname, username=self.ssh_user)
 
         # setting context
         context['sshclient'] = client
         context['host_string'] = hostname
+        context['username'] = username
 
         for f in env.pre_task_hooks:
             if callable(f):
