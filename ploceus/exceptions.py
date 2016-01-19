@@ -3,4 +3,6 @@
 
 class PloceusError(Exception): pass
 
+class ArgumentsError(PloceusError): pass
+
 class RemoteCommandError(PloceusError): pass
