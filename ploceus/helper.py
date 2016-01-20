@@ -33,11 +33,11 @@ def run(command, quiet=False, _raise=True, *args, **kwargs):
     return CommandResult(stdout, stderr, rc)
 
 
-def sudo(command, quiet=False, sudo_user=None):
+def sudo(command, quiet=False, _raise=True, sudo_user=None):
     sudo_user = sudo_user or 'root'
 
     command = 'sudo -u %s -H -i %s' % (sudo_user, command)
-    _, stdout, stderr, rc =  _run_command(command, quiet)
+    _, stdout, stderr, rc =  _run_command(command, quiet, _raise)
     return CommandResult(stdout, stderr, rc)
 
 
