@@ -46,7 +46,8 @@ def _run_command(command, quiet=False, _raise=True):
     client = context['sshclient']
     hostname = context['host_string']
 
-    log(command, prefix='run')
+    if quiet is False:
+        log(command, prefix='run')
 
     stdin, stdout, stderr, rc = client.exec_command(command)
 
