@@ -23,9 +23,9 @@ class CommandResult(object):
         return self.value is 0
 
 
-def run(command, quiet=False, *args, **kwargs):
+def run(command, quiet=False, _raise=True, *args, **kwargs):
     # TODO: global sudo
-    _, stdout, stderr, rc = _run_command(command, quiet)
+    _, stdout, stderr, rc = _run_command(command, quiet, _raise)
     return CommandResult(stdout, stderr, rc)
 
 
@@ -37,7 +37,7 @@ def sudo(command, quiet=False, sudo_user=None):
     return CommandResult(stdout, stderr, rc)
 
 
-def _run_command(command, quiet=False):
+def _run_command(command, quiet=False, _raise=True):
     context = context_manager.get_context()
     client = context['sshclient']
     hostname = context['host_string']
@@ -49,7 +49,8 @@ def _run_command(command, quiet=False):
             for line in stderr:
                 print('[%s] %s' % (hostname, line.strip()))
 
-        raise RemoteCommandError()
+        if _raise:
+            raise RemoteCommandError()
 
     if quiet is False:
         for line in stdout:
