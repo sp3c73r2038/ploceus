@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
 from .exceptions import RemoteCommandError
 from .runtime import context_manager
+from .logger import log
 
 __all__ = ['run', 'sudo']
+
+
 
 
 class CommandResult(object):
@@ -42,18 +46,20 @@ def _run_command(command, quiet=False, _raise=True):
     client = context['sshclient']
     hostname = context['host_string']
 
+    log(command, prefix='run')
+
     stdin, stdout, stderr, rc = client.exec_command(command)
 
     if rc != 0:
         if quiet is False:
             for line in stderr:
-                print('[%s] %s' % (hostname, line.strip()))
+                log(line.strip(), prefix='err')
 
         if _raise:
             raise RemoteCommandError()
 
     if quiet is False:
         for line in stdout:
-            print('[%s] %s' % (hostname, line.strip()))
+                log(line.strip(), prefix='out')
 
     return stdin, stdout, stderr, rc
