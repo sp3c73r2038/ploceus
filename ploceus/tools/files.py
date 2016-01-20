@@ -44,6 +44,7 @@ def mode(path, use_sudo=None, sudo_user=None):
     rv = _('stat -c %%a %s' % path,
            quiet=True, sudo_user=sudo_user).stdout.read().strip()
     return '0' + rv.decode(env.encoding)
+_mode = mode
 
 
 def umask(path, use_sudo=None, sudo_user=None):
@@ -112,7 +113,7 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
     if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
         chown(dest, user, grp)
 
-    if mode and (mode(dest) != mode):
+    if mode and (_mode(dest) != mode):
         chmod(dest, mode)
 
 
