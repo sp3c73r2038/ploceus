@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ploceus.help import sudo
+from ploceus.helper import sudo
 
 
 def exists(name):
