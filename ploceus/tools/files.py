@@ -4,6 +4,7 @@ from tempfile import mkstemp
 
 from ploceus.runtime import context_manager, env
 from ploceus.helper import run, sudo
+from ploceus.logger import log
 
 
 def is_file(path, use_sudo=None, sudo_user=None):
@@ -85,6 +86,8 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
         t = os.fdopen(fd, 'w')
         t.write(contents)
         t.close()
+
+    log('%s -> %s' % (localpath, dest), prefix='upload')
 
     ssh.sftp.put(localpath, dest)
 
