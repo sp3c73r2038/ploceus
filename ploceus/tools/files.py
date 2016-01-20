@@ -9,17 +9,20 @@ from ploceus.logger import log
 
 def is_file(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('test -f %s' % path, sudo_user=sudo_user).succeeded
+    return _('test -f %s' % path,
+             sudo_user=sudo_user, _raise=False).succeeded
 
 
 def is_dir(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('test -d %s' % path, sudo_user=sudo_user).succeeded
+    return _('test -d %s' % path,
+             sudo_user=sudo_user, _raise=False).succeeded
 
 
 def is_symlink(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('test -L %s' % path, sudo_user=sudo_user).succeeded
+    return _('test -L %s' % path,
+             sudo_user=sudo_user, _raise=False).succeeded
 
 
 def owner(path, use_sudo=None, sudo_user=None):
@@ -49,17 +52,30 @@ def umask(path, use_sudo=None, sudo_user=None):
     return rv.decode(env.encoding)
 
 
-def chown(path, user, grp, use_sudo=None, sudo_user=None):
+def chown(path, user, grp, recursive=False,
+          use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('chown %s:%s %s' % (user, grp, path), sudo_user=sudo_user)
+
+    recur = ''
+    if recursive:
+        recur = '-R'
+
+    return _('chown %s %s:%s %s' % (recur, user, grp, path),
+             sudo_user=sudo_user)
 
 
-def chmod(path, mode, use_sudo=None, sudo_user=None):
+def chmod(path, mode, recursive=False,
+          use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('chmod %s %s' % (mode, path), sudo_user=sudo_user)
+
+    recur = ''
+    if recursive:
+        recur = '-R'
+
+    return _('chmod %s %s %s' % (recur, mode, path), sudo_user=sudo_user)
 
 
-def mkdir(path, user=None, group=None, mode=None,
+def mkdir(path, usera=None, grp=None, mode=None,
           use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     _('mkdir -p %s' % path, sudo_user=sudo_user)
