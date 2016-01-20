@@ -27,23 +27,23 @@ def is_symlink(path, use_sudo=None, sudo_user=None):
 
 def owner(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    out = _('stat -c %%U %s' % path,
+    rv = _('stat -c %%U %s' % path,
             quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return out.decode(env.encoding)
+    return rv.decode(env.encoding)
 
 
 def group(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%U %s' % path,
            quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return out.decode(env.encoding)
+    return rv.decode(env.encoding)
 
 
 def mode(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%a %s' % path,
            quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return '0' + out.decode(env.encoding)
+    return '0' + rv.decode(env.encoding)
 
 
 def umask(path, use_sudo=None, sudo_user=None):
@@ -112,7 +112,7 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
     if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
         chown(dest, user, grp)
 
-    if mode and (mode(path) != mode):
+    if mode and (mode(dest) != mode):
         chmod(dest, mode)
 
 
