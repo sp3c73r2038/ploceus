@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import os
+from tempfile import mkstemp
+
 from ploceus.runtime import context_manager, env
 from ploceus.helper import run, sudo
 
@@ -52,19 +55,48 @@ def chmod(path, mode, use_sudo=None, sudo_user=None):
     return _('chmod %s %s' % (mode, path))
 
 
-def upload_file(src, dest, user=None, grp=None, mode=None):
-    ctx = context_manager.get_context()
-    ssh = ctx['sshclient']
-    ssh.put_file(src, dest)
+def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
+    context = context_manager.get_context()
+    ssh = context['sshclient']
 
+    if src:
+        assert contents is None
+        localpath = src
+        t = None
+
+    if contents:
+        assert src is None
+        fd, localpath = mkstemp()
+        t = os.fdopen(fd, 'w')
+        t.write(contents)
+        t.close()
+
+    ssh.sftp.put(localpath, dest)
+
+    if t is not None:
+        os.unlink(localpath)
     if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
         chown(dest, user, grp)
 
     if mode and (mode(path) != mode):
         chmod(dest, mode)
 
-
-
-def upload_template(src, dest, jinja_ctx=None,
-                    owner=None, group=None, mode=None):
+def upload_template(dest, template=None, contents=None,
+                    user=None, grp=None, mode=None):
     raise NotImplementedError()
+    context = context_manager.get_context()
+    ssh = context['sshclient']
+
+    if src:
+        assert contents is None
+        localpath = src
+        t = None
+
+    if contents:
+        assert src is None
+        fd, localpath = mkstemp()
+        t = os.fdopen(fd, 'w')
+        t.write(contents)
+        t.close()
+
+    upload_file(dest, src=localpath, user=user, grp=grp, mode=mode)
