@@ -65,6 +65,11 @@ def chown(path, user, grp, recursive=False,
              sudo_user=sudo_user)
 
 
+def getmtime(path, use_sudo=True):
+    _ = (use_sudo and sudo) or run
+    return int(_('stat -c %%Y %s' % path, quiet=True).stdout.read.strip())
+
+
 def chmod(path, mode, recursive=False,
           use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
