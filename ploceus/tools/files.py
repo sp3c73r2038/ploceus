@@ -23,36 +23,51 @@ def is_symlink(path, use_sudo=None, sudo_user=None):
 
 def owner(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    out = _('stat -c %%U %s' % path, quiet=True).stdout.read().strip()
+    out = _('stat -c %%U %s' % path,
+            quiet=True, sudo_user=sudo_user).stdout.read().strip()
     return out.decode(env.encoding)
 
 
 def group(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    rv = _('stat -c %%U %s' % path, quiet=True).stdout.read().strip()
+    rv = _('stat -c %%U %s' % path,
+           quiet=True, sudo_user=sudo_user).stdout.read().strip()
     return out.decode(env.encoding)
 
 
 def mode(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    rv = _('stat -c %%a %s' % path, quiet=True).stdout.read().strip()
+    rv = _('stat -c %%a %s' % path,
+           quiet=True, sudo_user=sudo_user).stdout.read().strip()
     return '0' + out.decode(env.encoding)
 
 
 def umask(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    rv = _('umask', quiet=True).stdout.read().strip()
+    rv = _('umask', quiet=True, sudo_user=sudo_user).stdout.read().strip()
     return rv.decode(env.encoding)
 
 
 def chown(path, user, grp, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('chown %s:%s %s' % (user, grp, path))
+    return _('chown %s:%s %s' % (user, grp, path), sudo_user=sudo_user)
 
 
 def chmod(path, mode, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    return _('chmod %s %s' % (mode, path))
+    return _('chmod %s %s' % (mode, path), sudo_user=sudo_user)
+
+
+def mkdir(path, user=None, group=None, mode=None,
+          use_sudo=None, sudo_user=None):
+    _ = (use_sudo and sudo) or run
+    _('mkdir -p %s' % path, sudo_user=sudo_user)
+
+    if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
+        chown(dest, user, grp)
+
+    if mode and (mode(path) != mode):
+        chmod(dest, mode)
 
 
 def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
@@ -80,6 +95,7 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
 
     if mode and (mode(path) != mode):
         chmod(dest, mode)
+
 
 def upload_template(dest, template=None, contents=None,
                     user=None, grp=None, mode=None):
