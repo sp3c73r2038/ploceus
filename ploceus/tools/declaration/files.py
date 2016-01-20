@@ -9,7 +9,7 @@ def directory(path, user=None, grp=None,
                     use_sudo=use_sudo)
         return
 
-    if (owner and (files.owner(path) != user)) or\
+    if (user and (files.owner(path) != user)) or\
        ((grp and files.group(path) != grp)):
         files.chown(path, user=user, grp=grp,
                     recursive=recursive, use_sudo=use_sudo)
