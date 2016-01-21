@@ -25,4 +25,6 @@ APT::Update::Post-Invoke-Success {"touch /var/lib/apt/periodic/ploceus-update-su
                       """)
 
     if system.time() - deb.last_update_time() > max_age:
+        log('updateing apt index', prefix='deb')
         deb.update_index(quiet=quiet)
+    log('apt index updated', prefix='deb')
