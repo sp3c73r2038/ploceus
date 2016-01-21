@@ -4,7 +4,7 @@ import sys
 from ploceus import g
 from ploceus import ploceusfile
 from ploceus.exceptions import ArgumentError
-from ploceus.inventory import Inventory, find_inventory
+from ploceus.inventory import Inventory
 
 
 
@@ -31,7 +31,6 @@ class Ploceus(object):
         self.should_list_inventory = False
         self.hosts = []
         self.task_name = None
-        self.inventory = None
         self.group = None
 
 
@@ -47,8 +46,8 @@ class Ploceus(object):
         else:
             ploceusfile.ploceusfile_from_pyfile(self.ploceusfile)
 
-        if self.inventory is None:
-            self.inventory = find_inventory()
+        if g.inventory.empty:
+            g.inventory.find_inventory()
 
         if exit:
             return 0
@@ -58,17 +57,17 @@ class Ploceus(object):
             return 0
 
         if self.should_list_inventory:
-            if self.inventory is None:
+            if g.inventory.empty:
                 raise ArgumentError('cannot find inventory.')
             self.list_inventory()
             return 0
 
-        if self.group and self.inventory is None:
+        if self.group and g.inventory.empty:
             raise ArgumentError('Specify inventory when using group, please.')
 
         extra_vars = None
         if self.group:
-            group_hosts = self.inventory.get_target_hosts(self.group)
+            group_hosts = g.inventory.get_target_hosts(self.group)
             if group_hosts:
                 self.hosts += group_hosts['hosts']
                 extra_vars = group_hosts.get('vars')
@@ -104,7 +103,7 @@ class Ploceus(object):
 
 
     def list_inventory(self):
-        self.inventory.list_inventory()
+        g.inventory.list_inventory()
 
 
     def set_ploceusfile(self, args):
@@ -122,7 +121,7 @@ class Ploceus(object):
     def set_inventory(self, args):
         args.pop(0)
 
-        self.inventory = inventory = Inventory(args.pop(0))
+        g.inventory = inventory = Inventory(args.pop(0))
 
 
     def set_group(self, args):
