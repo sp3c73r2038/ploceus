@@ -34,7 +34,7 @@ def owner(path, use_sudo=None, sudo_user=None):
 
 def group(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    rv = _('stat -c %%U %s' % path,
+    rv = _('stat -c %%G %s' % path,
            quiet=True, sudo_user=sudo_user).stdout.read().strip()
     return rv.decode(env.encoding)
 
@@ -115,6 +115,7 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
 
     if t is not None:
         os.unlink(localpath)
+
     if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
         chown(dest, user, grp)
 

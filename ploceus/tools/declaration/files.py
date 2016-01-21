@@ -14,6 +14,6 @@ def directory(path, user=None, grp=None,
         files.chown(path, user=user, grp=grp,
                     recursive=recursive, use_sudo=use_sudo)
 
-    if mode and (files.mode != mode):
+    if mode and (files.mode(path) != mode):
         files.chmod(path, mode=mode, recursive=recursive,
                     use_sudo=use_sudo)

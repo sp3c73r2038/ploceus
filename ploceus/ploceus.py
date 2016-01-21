@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
-from . import ploceusfile
 import sys
 
+from ploceus import ploceusfile
+from ploceus import g
 
-class Commander(object):
 
-    tasks = {}
+
+class Ploceus(object):
+
 
     def __init__(self):
         self.ploceusfile = None
         self.should_list_tasks = False
         self.hosts = []
         self.task_name = None
-
-    def add_task(self, task):
-        self.tasks[task.name] = task
 
 
     def run(self):
@@ -41,7 +40,7 @@ class Commander(object):
 
         # TODO: parallelism
         for host in self.hosts:
-            task = self.tasks.get(self.task_name)
+            task = g.tasks.get(self.task_name)
             if task is None:
                 print('\n\tunknown task: %s\n' % self.task_name)
                 return
@@ -49,12 +48,12 @@ class Commander(object):
 
 
     def list_tasks(self):
-        if len(self.tasks) == 0:
+        if len(g.tasks) == 0:
             print('\n  No tasks defined.\n\n')
             return True
 
         print('\n  Available tasks:\n')
-        for name in sorted(self.tasks.keys()):
+        for name in sorted(g.tasks.keys()):
             print('\t%s' % name)
 
         print('\n')
