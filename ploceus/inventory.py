@@ -5,14 +5,11 @@ import os
 from ploceus.exceptions import NoGroupFoundError
 
 
-def find_inventory():
-    if os.path.exists('hosts'):
-        return Inventory('hosts')
 
 
 class Inventory(object):
 
-    def __init__(self, inventory):
+    def __init__(self, inventory=None):
         self.inventory = inventory
         self._groups = None
 
@@ -41,6 +38,13 @@ class Inventory(object):
             return yaml.load(f.read())
 
 
+    @property
+    def empty(self):
+        if self._groups is None:
+            return True
+        return len(self._groups.keys()) <= 0
+
+
     def list_inventory(self):
         if self._groups is None:
             self._load_inventory()
@@ -64,3 +68,9 @@ class Inventory(object):
             raise NoGroupFoundError('no group named %s found' % group_name)
 
         return group
+
+
+    def find_inventory(self):
+        if os.path.exists('hosts'):
+            self.inventory = 'hosts'
+            self._load_inventory()

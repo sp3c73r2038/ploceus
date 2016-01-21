@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
-from . import ssh
+from ploceus import ssh
+from ploceus.inventory import Inventory
+
 
 class GlobalStore(object):
 
     tasks = {}
+    inventory = Inventory()
 
     def add_task(self, task):
         self.tasks[task.name] = task
+
+
 
 g = GlobalStore()
