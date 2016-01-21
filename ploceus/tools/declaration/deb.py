@@ -21,7 +21,7 @@ def packages(pkgs, update=False):
 def uptodate_index(quiet=True, max_age=3600):
     files.upload_file('/etc/apt/apt.conf.d/15-ploceus-update-stamp',
                       contents="""
-APT::Update::Post-Invoke-Success {"touch /var/lib/apt/periodic/fabtools-update-success-stamp 2>/dev/null || true";};
+APT::Update::Post-Invoke-Success {"touch /var/lib/apt/periodic/ploceus-update-success-stamp 2>/dev/null || true";};
                       """)
 
     if system.time() - deb.last_update_time() > max_age:
