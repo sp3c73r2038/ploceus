@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from . import exceptions
-from .cli import cmdr
-from .runtime import context_manager, env
-from .ssh import SSHClient
-
+from ploceus import g
+from ploceus import exceptions
+from ploceus.runtime import context_manager, env
+from ploceus.ssh import SSHClient
 
 
 class Task(object):
@@ -20,7 +19,7 @@ class Task(object):
             name = '%s.%s' % (module, name)
         self.name = name
 
-        cmdr.add_task(self)
+        g.add_task(self)
 
 
     def run(self, hostname):

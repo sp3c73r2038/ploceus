@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from .commander import Commander
+from ploceus.ploceus import Ploceus
 
 
 
-cmdr = Commander()
+ploceus = Ploceus()
 
 def main():
-    cmdr.run()
+    ploceus.run()
 
 if __name__ == '__main__':
     sys.exit(main())

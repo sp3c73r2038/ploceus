@@ -11,7 +11,7 @@ def update_index(quiet=True):
     if quiet:
         options = ' --quiet'
 
-    sudo('%s %s update' % (MANAGER, options))
+    sudo('%s %s update' % (MANAGER, options), quiet=quiet)
 
 
 def is_installed(pkg):
