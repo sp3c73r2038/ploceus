@@ -1,3 +1,5 @@
 .virtualenv/
 *.py[co]
 *.egg-info/
+
+/hosts/
