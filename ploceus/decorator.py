@@ -12,11 +12,7 @@ def task(*args, **kwargs):
     def wrapper(func):
 
         def new_func(*_args, **_kwargs):
-            # TODO: hook
-
             rv = func(*_args, **_kwargs)
-
-            # TODO: hook
             return rv
 
         new_func.__name__ = func.__name__

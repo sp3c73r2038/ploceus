@@ -22,13 +22,14 @@ class Task(object):
         g.add_task(self)
 
 
-    def run(self, hostname):
-        return self._run(hostname)
+    def run(self, hostname, extra_vars=None):
+        return self._run(hostname, extra_vars)
 
 
-    def _run(self, hostname):
+    def _run(self, hostname, extra_vars):
 
         context = context_manager.get_context()
+        context['extra_vars'] = extra_vars
 
         # connect to remote host
         client = SSHClient()

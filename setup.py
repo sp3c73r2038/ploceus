@@ -7,7 +7,8 @@ setup(
     version='0.0.1',
     install_requires=[
         'pycrypto==2.4.1',
-        'paramiko'
+        'paramiko',
+        'PyYAML'
     ],
     entry_points="""
     [console_scripts]
