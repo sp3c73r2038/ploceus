@@ -60,8 +60,10 @@ class Inventory(object):
 
 
     def get_target_hosts(self, group_name):
-        if self._groups is None:
+        if self.empty:
             self._load_inventory()
+        if self.empty:
+            self.find_inventory()
 
         group = self._groups.get(group_name)
         if group is None:

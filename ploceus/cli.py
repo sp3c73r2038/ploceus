@@ -46,9 +46,6 @@ class Ploceus(object):
         else:
             ploceusfile.ploceusfile_from_pyfile(self.ploceusfile)
 
-        if g.inventory.empty:
-            g.inventory.find_inventory()
-
         if exit:
             return 0
 
