@@ -53,7 +53,7 @@ def uninstall(packages, purge=False, options=None):
 
 
 def last_update_time():
-    STAMP = '/var/lib/periodic/ploceus-update-success-stamp'
+    STAMP = '/var/lib/apt/periodic/ploceus-update-success-stamp'
     if not files.is_file(STAMP):
         return -1
     return files.getmtime(STAMP)
