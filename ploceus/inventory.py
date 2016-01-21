@@ -41,6 +41,20 @@ class Inventory(object):
             return yaml.load(f.read())
 
 
+    def list_inventory(self):
+        if self._groups is None:
+            self._load_inventory()
+
+        if len(self._groups.keys()) == 0:
+            print('\n    No group defined.\n')
+
+        print('\n  Available groups:\n')
+        for name in sorted(self._groups.keys()):
+            print('\t%s' % name)
+
+        print('\n')
+
+
     def get_target_hosts(self, group_name):
         if self._groups is None:
             self._load_inventory()

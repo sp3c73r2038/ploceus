@@ -8,12 +8,27 @@ from ploceus.inventory import Inventory, find_inventory
 
 
 
+def usage():
+    print('\n  Ploceus, programmer-friendly automated remote execution tool.')
+    print('')
+    print('    ploceus [options] <task_name>\n')
+    print('\t-h, --help            show this help')
+    print('\t-l, --list-tasks      list all avaiable tasks')
+    print('\t-f, --ploceus-file    specify Ploceusfile')
+    print('\t-H, --hosts           specify hosts')
+    print('\t-i, --inventory       specify inventory file / directory')
+    print('\t-g, --group           specify group of hosts in inventory')
+    print('\t--list-inventory      list all avaiable groups of hosts')
+    print('\n')
+
+
 class Ploceus(object):
 
 
     def __init__(self):
         self.ploceusfile = None
         self.should_list_tasks = False
+        self.should_list_inventory = False
         self.hosts = []
         self.task_name = None
         self.inventory = None
@@ -22,12 +37,10 @@ class Ploceus(object):
 
     def run(self):
         if len(sys.argv) == 1:
-            # TODO: help usage
+            usage()
             return
 
         exit = self._handle_args(sys.argv[1:])
-        if exit:
-            return 0
 
         if self.ploceusfile is None:
             ploceusfile.find_ploceusfile()
@@ -37,8 +50,17 @@ class Ploceus(object):
         if self.inventory is None:
             self.inventory = find_inventory()
 
+        if exit:
+            return 0
+
         if self.should_list_tasks:
             self.list_tasks()
+            return 0
+
+        if self.should_list_inventory:
+            if self.inventory is None:
+                raise ArgumentError('cannot find inventory.')
+            self.list_inventory()
             return 0
 
         if self.group and self.inventory is None:
@@ -81,6 +103,10 @@ class Ploceus(object):
         print('\n')
 
 
+    def list_inventory(self):
+        self.inventory.list_inventory()
+
+
     def set_ploceusfile(self, args):
         args.pop(0)
         self.ploceusfile = args.pop(0)
@@ -107,9 +133,18 @@ class Ploceus(object):
 
     def _handle_args(self, args):
         exit = False
+
+        if len(args) == 0:
+            usage()
+            return True
+
         while len(args) > 0:
             if exit:
                 return exit
+
+            if args[0].strip() in ('-h', '--help'):
+                usage()
+                return True
 
             if args[0].strip() in ('-l', '--list-tasks'):
                 args.pop(0)
@@ -132,11 +167,22 @@ class Ploceus(object):
                 self.set_group(args)
                 continue
 
+            if args[0].strip() in ('-g', '--group'):
+                self.set_group(args)
+                continue
+
+            if args[0].strip() in ('--list-inventory'):
+                args.pop(0)
+                self.should_list_inventory = True
+                continue
+
             self.task_name = args.pop(0)
             if len(args) > 1:
                 print('\n\tplease specify all options before <task>\n')
                 return True
             break
+
+
 
 def main():
     ploceus = Ploceus()
