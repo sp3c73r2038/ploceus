@@ -19,6 +19,7 @@ def usage():
     print('\t-H, --hosts           specify hosts')
     print('\t-i, --inventory       specify inventory file / directory')
     print('\t-g, --group           specify group of hosts in inventory')
+    print('\t-P, --parallel        run task across hosts parallelly')
     print('\t--list-inventory      list all avaiable groups of hosts')
     print('\n')
 
