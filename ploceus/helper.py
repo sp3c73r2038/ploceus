@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import subprocess
+
 import logging
-from .exceptions import RemoteCommandError
-from .runtime import context_manager
-from .logger import log
+from ploceus.exceptions import RemoteCommandError
+from ploceus.runtime import context_manager, env
+from ploceus.logger import log
 
 __all__ = ['run', 'sudo']
 
@@ -39,6 +41,24 @@ def sudo(command, quiet=False, _raise=True, sudo_user=None):
     command = 'sudo -u %s -H -i %s' % (sudo_user, command)
     _, stdout, stderr, rc =  _run_command(command, quiet, _raise)
     return CommandResult(stdout, stderr, rc)
+
+
+def local(command, quiet=False, _raise=True):
+    p = subprocess.Popen(command, shell=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+    if p.returncode != 0:
+        if quiet is False:
+            for line in stderr.decode(env.encoding).split('\n'):
+                log(line.strip(), prefix='err')
+        if _raise:
+            raise LocalCommandError()
+
+    if quiet is False:
+        for line in stdout.decode(env.encoding).split('\n'):
+            log(line.strip(), prefix='out')
+
+    return CommandResult(stdout, stderr, p.returncode)
 
 
 def _run_command(command, quiet=False, _raise=True):
