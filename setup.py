@@ -8,7 +8,8 @@ setup(
     install_requires=[
         'pycrypto==2.4.1',
         'paramiko',
-        'PyYAML'
+        'PyYAML',
+        'Jinja2'
     ],
     entry_points="""
     [console_scripts]
