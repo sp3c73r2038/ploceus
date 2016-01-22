@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import jinja2
 import os
 from tempfile import mkstemp
 
@@ -96,7 +97,8 @@ def mkdir(path, usera=None, grp=None, mode=None,
         chmod(dest, mode)
 
 
-def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
+def upload_file(dest, src=None, contents=None,
+                user=None, grp=None, mode=None, quiet=False):
     context = context_manager.get_context()
     ssh = context['sshclient']
 
@@ -112,7 +114,8 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
         t.write(contents)
         t.close()
 
-    log('%s -> %s' % (localpath, dest), prefix='upload')
+    if quiet is False:
+        log('file: %s -> %s' % (localpath, dest), prefix='upload')
 
     ssh.sftp.put(localpath, dest)
 
@@ -127,21 +130,31 @@ def upload_file(dest, src=None, contents=None, user=None, grp=None, mode=None):
 
 
 def upload_template(dest, template=None, contents=None,
-                    user=None, grp=None, mode=None):
-    raise NotImplementedError()
+                    jinja_ctx=None, user=None, grp=None, mode=None):
     context = context_manager.get_context()
     ssh = context['sshclient']
 
-    if src:
+    jinja_ctx = jinja_ctx or {}
+    if 'extra_vars' in context and context['extra_vars']:
+        jinja_ctx.update(context['extra_vars'])
+
+    _template = template
+
+    if template:
         assert contents is None
-        localpath = src
-        t = None
+        log('template: %s -> %s' % (template, dest), prefix='upload')
+        with open(template) as f:
+            t = jinja2.Template(f.read(), keep_trailing_newline=True)
+            contents = t.render(**jinja_ctx)
+            template = None
 
     if contents:
-        assert src is None
+        assert template is None
         fd, localpath = mkstemp()
         t = os.fdopen(fd, 'w')
         t.write(contents)
         t.close()
+        if _template is None:
+            log('template: %s -> %s' % (localpath, dest), prefix='upload')
 
-    upload_file(dest, src=localpath, user=user, grp=grp, mode=mode)
+    upload_file(dest, src=localpath, user=user, grp=grp, mode=mode, quiet=True)
