@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ploceus.tools.service import start, stop, restart, reload
+from ploceus.tools.service import is_running, start, stop, restart, reload
 from ploceus.logger import log
 
 
