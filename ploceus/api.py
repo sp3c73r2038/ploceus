@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from ploceus.decorator import task
-from ploceus.helper import run, sudo
+from ploceus.helper import local, run, sudo
 
 
 def run_task_by_group(group_name, task, extra_vars=None):
