@@ -138,9 +138,15 @@ def upload_template(dest, template=None, contents=None,
     if 'extra_vars' in context and context['extra_vars']:
         jinja_ctx.update(context['extra_vars'])
 
+
+    _ctx = context.copy()
+    _ctx.pop('sshclient')
+
+    jinja_ctx['context'] = _ctx
+
     _template = template
 
-    if template:
+    if template is not None:
         assert contents is None
         log('template: %s -> %s' % (template, dest), prefix='upload')
         with open(template) as f:
@@ -148,7 +154,7 @@ def upload_template(dest, template=None, contents=None,
             contents = t.render(**jinja_ctx)
             template = None
 
-    if contents:
+    if contents is not None:
         assert template is None
         fd, localpath = mkstemp()
         t = os.fdopen(fd, 'w')

@@ -5,6 +5,7 @@ from ploceus import g
 from ploceus import ploceusfile
 from ploceus.exceptions import ArgumentError
 from ploceus.inventory import Inventory
+from ploceus.task import TaskRunner
 
 
 
@@ -32,6 +33,7 @@ class Ploceus(object):
         self.hosts = []
         self.task_name = None
         self.group = None
+        self.parallel = False
 
 
     def run(self):
@@ -78,13 +80,12 @@ class Ploceus(object):
         print('task_name: %s' % self.task_name)
         print('hosts: %s' % self.hosts)
 
-        # TODO: parallelism
-        for host in self.hosts:
-            task = g.tasks.get(self.task_name)
-            if task is None:
-                print('\n\tunknown task: %s\n' % self.task_name)
-                return
-            task.run(host, extra_vars)
+        task = g.tasks.get(self.task_name)
+        if task is None:
+            print('\n\tunknown task: %s\n' % self.task_name)
+            return
+
+        TaskRunner.run_task_with_hosts(task, self.hosts, self.parallel)
 
 
     def list_tasks(self):
@@ -127,6 +128,12 @@ class Ploceus(object):
         self.group = args.pop(0)
 
 
+    def set_parallel(self, args):
+        args.pop(0)
+
+        self.parallel = True
+
+
     def _handle_args(self, args):
         exit = False
 
@@ -165,6 +172,10 @@ class Ploceus(object):
 
             if args[0].strip() in ('-g', '--group'):
                 self.set_group(args)
+                continue
+
+            if args[0].strip() in ('-P', '--parallel'):
+                self.set_parallel(args)
                 continue
 
             if args[0].strip() in ('--list-inventory'):
