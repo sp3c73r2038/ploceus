@@ -27,5 +27,5 @@ def reload(service):
 
 def _service(service, action):
     rv = sudo('service %s %s' % (service, action),
-              quiet=True).stdout.read().strip()
+              quiet=True).stdout.strip()
     return rv
