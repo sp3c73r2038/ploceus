@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import threading
+
 from ploceus import g
 from ploceus import exceptions
 from ploceus.runtime import context_manager, env
@@ -61,3 +63,38 @@ class Task(object):
         client.close()
 
         return rv
+
+class TaskRunner(object):
+
+    @staticmethod
+    def run_task_with_hosts(task, hosts, parallel=False, *args, **kwargs):
+        if parallel:
+            TaskRunner.run_task_concurrently(task, hosts, *args, **kwargs)
+        else:
+            TaskRunner.run_task_single_thread(task, hosts, *args, **kwargs)
+
+
+    @staticmethod
+    def run_task_single_thread(task, hosts, *args, **kwargs):
+        for host in hosts:
+            task.run(host, *args, **kwargs)
+
+
+    @staticmethod
+    def run_task_concurrently(task, hosts, *args, **kwargs):
+        threads = list()
+        for host in hosts:
+            t = threading.Thread(target=task.run, args=(host,))
+            t.start()
+            threads.append(t)
+
+        while True:
+            for t in threads:
+                if t.is_alive():
+                    t.join(timeout=1)
+                else:
+                    threads.remove(t)
+                    break
+
+            if len(threads) == 0:
+                break
