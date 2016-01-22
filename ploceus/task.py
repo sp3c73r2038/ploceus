@@ -50,8 +50,6 @@ class Task(object):
         rv = None
         try:
             rv = self.func()
-        except exceptions.RemoteCommandError as err:
-            print('\n\n\terror when running remote command\n')
         except:
             import traceback
             traceback.print_exc()
