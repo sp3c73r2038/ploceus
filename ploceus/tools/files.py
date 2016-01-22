@@ -32,29 +32,29 @@ def is_symlink(path, use_sudo=None, sudo_user=None):
 def owner(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%U %s' % path,
-            quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return rv.decode(env.encoding)
+            quiet=True, sudo_user=sudo_user).stdout.strip()
+    return rv
 
 
 def group(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%G %s' % path,
-           quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return rv.decode(env.encoding)
+           quiet=True, sudo_user=sudo_user).stdout.strip()
+    return rv
 
 
 def mode(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%a %s' % path,
-           quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return '0' + rv.decode(env.encoding)
+           quiet=True, sudo_user=sudo_user).stdout.strip()
+    return '0' + rv
 _mode = mode
 
 
 def umask(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    rv = _('umask', quiet=True, sudo_user=sudo_user).stdout.read().strip()
-    return rv.decode(env.encoding)
+    rv = _('umask', quiet=True, sudo_user=sudo_user).stdout.strip()
+    return rv
 
 
 def chown(path, user, grp, recursive=False,
@@ -71,7 +71,7 @@ def chown(path, user, grp, recursive=False,
 
 def getmtime(path, use_sudo=True):
     _ = (use_sudo and sudo) or run
-    return int(_('stat -c %%Y %s' % path, quiet=True).stdout.read().strip())
+    return int(_('stat -c %%Y %s' % path, quiet=True).stdout.strip())
 
 
 def chmod(path, mode, recursive=False,

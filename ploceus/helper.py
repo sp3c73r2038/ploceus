@@ -71,16 +71,19 @@ def _run_command(command, quiet=False, _raise=True):
 
     stdin, stdout, stderr, rc = client.exec_command(command)
 
+    stdout = stdout.read().decode(env.encoding)
+    stderr = stderr.read().decode(env.encoding)
+
     if rc != 0:
         if quiet is False:
-            for line in stderr:
+            for line in stderr.split('\n'):
                 log(line.strip(), prefix='err')
 
         if _raise:
-            raise RemoteCommandError()
+            raise RemoteCommandError(stderr)
 
     if quiet is False:
-        for line in stdout:
+        for line in stdout.split('\n'):
                 log(line.strip(), prefix='out')
 
     return stdin, stdout, stderr, rc
