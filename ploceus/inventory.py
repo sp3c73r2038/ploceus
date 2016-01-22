@@ -40,8 +40,11 @@ class Inventory(object):
 
     @property
     def empty(self):
+        if self.inventory is None:
+            self.find_inventory()
+
         if self._groups is None:
-            return True
+            self._load_inventory()
         return len(self._groups.keys()) <= 0
 
 
