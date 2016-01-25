@@ -2,7 +2,6 @@
 from ploceus.utils._collections import ThreadLocalRegistry
 
 
-
 class Context(dict): pass
 
 # TODO: scope
