@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+import hashlib
 import jinja2
 import os
 from tempfile import mkstemp
+
 
 from ploceus.runtime import context_manager, env
 from ploceus.helper import run, sudo
@@ -98,7 +100,8 @@ def mkdir(path, user=None, grp=None, mode=None,
 
 
 def upload_file(dest, src=None, contents=None,
-                user=None, grp=None, mode=None, quiet=False):
+                user=None, grp=None, mode=None,
+                use_sudo=False, quiet=False, temp_dir="/tmp/"):
     context = context_manager.get_context()
     ssh = context['sshclient']
 
@@ -117,20 +120,32 @@ def upload_file(dest, src=None, contents=None,
     if quiet is False:
         log('file: %s -> %s' % (localpath, dest), prefix='upload')
 
+
+    origin_dest = dest
+    if use_sudo:
+        h = hashlib.sha1()
+        h.update(context['host_string'].encode('ascii'))
+        h.update(dest.encode('utf-8'))
+        dest = os.path.join(temp_dir, h.hexdigest())
+
     ssh.sftp.put(localpath, dest)
 
     if t is not None:
         os.unlink(localpath)
 
     if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
-        chown(dest, user, grp)
+        chown(dest, user, grp, use_sudo=use_sudo)
 
     if mode and (_mode(dest) != mode):
-        chmod(dest, mode)
+        chmod(dest, mode, use_sudo=use_sudo)
+
+    if use_sudo:
+        sudo('mv %s %s' % (dest, origin_dest), quiet=True)
 
 
 def upload_template(dest, template=None, contents=None,
-                    jinja_ctx=None, user=None, grp=None, mode=None):
+                    jinja_ctx=None, user=None, grp=None, mode=None,
+                    use_sudo=False):
     context = context_manager.get_context()
     ssh = context['sshclient']
 
@@ -163,4 +178,5 @@ def upload_template(dest, template=None, contents=None,
         if _template is None:
             log('template: %s -> %s' % (localpath, dest), prefix='upload')
 
-    upload_file(dest, src=localpath, user=user, grp=grp, mode=mode, quiet=True)
+    upload_file(dest, src=localpath, user=user, grp=grp,
+                mode=mode, quiet=True, use_sudo=use_sudo)

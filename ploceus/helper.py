@@ -45,8 +45,7 @@ def sudo(command, quiet=False, _raise=True, sudo_user=None):
     sudo_user = sudo_user or 'root'
 
     command = 'sudo -u %s -H -i %s' % (sudo_user, command)
-    _, stdout, stderr, rc =  run(command, quiet, _raise)
-    return CommandResult(stdout, stderr, rc)
+    return run(command, quiet, _raise)
 
 
 def local(command, quiet=False, _raise=True):
