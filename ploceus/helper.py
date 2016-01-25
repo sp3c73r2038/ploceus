@@ -32,7 +32,9 @@ class CommandResult(object):
 def run(command, quiet=False, _raise=True, *args, **kwargs):
     # TODO: global sudo
 
-    if env.local_mode:
+    context = context_manager.get_context()
+
+    if context.get('local_mode'):
         return local(command, quiet, _raise)
     else:
         _, stdout, stderr, rc = _run_command(command, quiet, _raise)
@@ -49,16 +51,19 @@ def sudo(command, quiet=False, _raise=True, sudo_user=None):
 
 def local(command, quiet=False, _raise=True):
 
+    context = context_manager.get_context()
+
+
     wrapped_command = command
-    if env.cwd:
-        wrapped_command = 'cd %s && %s' % (env.cwd, command)
+    if context.get('cwd'):
+        wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
     if quiet is False:
         log(wrapped_command, prefix='local')
 
     p = subprocess.Popen(command, shell=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                         cwd=env.cwd)
+                         cwd=context.get('cwd'))
     stdout, stderr = p.communicate()
 
     stdout = stdout.decode(env.encoding)
@@ -88,8 +93,8 @@ def _run_command(command, quiet=False, _raise=True):
     if quiet is False:
         log(wrapped_command, prefix='run')
 
-    if env.cwd:
-        wrapped_command = 'cd %s && %s' % (env.cwd, command)
+    if context.get('cwd'):
+        wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
     stdin, stdout, stderr, rc = client.exec_command(wrapped_command)
 
