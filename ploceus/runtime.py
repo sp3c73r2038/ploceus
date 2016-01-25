@@ -23,6 +23,10 @@ def cd(path):
     return _setenv('cwd', new_cwd)
 
 
+def local_mode():
+    return _setenv('local_mode', True)
+
+
 @contextmanager
 def _setenv(name, value):
     previous = getattr(env ,name)
