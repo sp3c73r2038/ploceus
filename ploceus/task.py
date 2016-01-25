@@ -24,11 +24,11 @@ class Task(object):
         g.add_task(self)
 
 
-    def run(self, hostname, extra_vars=None):
-        return self._run(hostname, extra_vars)
+    def run(self, hostname, extra_vars=None, *args, **kwargs):
+        return self._run(hostname, extra_vars, *args, **kwargs)
 
 
-    def _run(self, hostname, extra_vars):
+    def _run(self, hostname, extra_vars, *args, **kwargs):
 
         context = context_manager.get_context()
         context['extra_vars'] = extra_vars
@@ -49,7 +49,7 @@ class Task(object):
 
         rv = None
         try:
-            rv = self.func()
+            rv = self.func(*args, **kwargs)
         except:
             import traceback
             traceback.print_exc()
@@ -65,24 +65,27 @@ class Task(object):
 class TaskRunner(object):
 
     @staticmethod
-    def run_task_with_hosts(task, hosts, parallel=False, *args, **kwargs):
+    def run_task_with_hosts(task, hosts, parallel=False, **kwargs):
         if parallel:
-            TaskRunner.run_task_concurrently(task, hosts, *args, **kwargs)
+            TaskRunner.run_task_concurrently(task, hosts, **kwargs)
         else:
-            TaskRunner.run_task_single_thread(task, hosts, *args, **kwargs)
+            TaskRunner.run_task_single_thread(task, hosts, **kwargs)
 
 
     @staticmethod
-    def run_task_single_thread(task, hosts, *args, **kwargs):
+    def run_task_single_thread(task, hosts, **kwargs):
         for host in hosts:
-            task.run(host, *args, **kwargs)
+            task.run(host, **kwargs)
 
 
     @staticmethod
-    def run_task_concurrently(task, hosts, *args, **kwargs):
+    def run_task_concurrently(task, hosts, **kwargs):
         threads = list()
         for host in hosts:
-            t = threading.Thread(target=task.run, args=(host,))
+
+            t = threading.Thread(target=task.run,
+                                 args=(host,),
+                                 kwargs=kwargs)
             t.start()
             threads.append(t)
 

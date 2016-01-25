@@ -5,7 +5,8 @@ from ploceus.runtime import cd, local_mode
 from ploceus.task import TaskRunner
 
 
-def run_task_by_group(group_name, tasks, extra_vars=None, parallel=False):
+def run_task_by_group(group_name, tasks,
+                      extra_vars=None, parallel=False, **kwargs):
     from ploceus import g
     g.inventory.find_inventory()
     group = g.inventory.get_target_hosts(group_name)
@@ -18,4 +19,5 @@ def run_task_by_group(group_name, tasks, extra_vars=None, parallel=False):
         tasks = [tasks]
 
     for task in tasks:
-        TaskRunner.run_task_with_hosts(task, hosts, parallel=parallel)
+        TaskRunner.run_task_with_hosts(task, hosts,
+                                       parallel=parallel, **kwargs)
