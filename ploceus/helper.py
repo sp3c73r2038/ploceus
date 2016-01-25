@@ -45,6 +45,13 @@ def sudo(command, quiet=False, _raise=True, sudo_user=None):
 
 def local(command, quiet=False, _raise=True):
 
+    wrapped_command = command
+    if env.cwd:
+        wrapped_command = 'cd %s && %s' % (env.cwd, command)
+
+    if quiet is False:
+        log(wrapped_command, prefix='local')
+
     p = subprocess.Popen(command, shell=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          cwd=env.cwd)
