@@ -28,3 +28,21 @@ APT::Update::Post-Invoke-Success {"touch /var/lib/apt/periodic/ploceus-update-su
         log('updateing apt index', prefix='deb')
         deb.update_index(quiet=quiet)
     log('apt index updated', prefix='deb')
+
+
+def key(key_id, url):
+    if not deb.apt_key_exists(key_id):
+        deb.add_apt_key(url)
+    log('added apt key "%s"' % key_id, prefix='deb')
+
+
+def source(name, uri, distribution, *components, **kwargs)    :
+    if 'arch' in kwargs:
+        arch = '[arch=%s]' % kwargs.get('arch')
+
+    path = '/etc/apt/sources.list.d/%s.list' % name
+    components = ' '.join(components)
+
+    contents = 'deb %s %s %s %s\n' % (arch, uri, distribution, components)
+    files.upload_file(path, contents=contents)
+    log('added apt repo "%s"' % name, prefix='deb')
