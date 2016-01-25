@@ -57,3 +57,14 @@ def last_update_time():
     if not files.is_file(STAMP):
         return -1
     return files.getmtime(STAMP)
+
+
+def apt_key_exists(key_id):
+    _ = run('apt-key list | grep %s' % key_id, _raise=False, quiet=True)
+    if _.stdout:
+        return True
+    return False
+
+
+def add_apt_key(url):
+    run('curl -s %s | apt-key add -' % url)
