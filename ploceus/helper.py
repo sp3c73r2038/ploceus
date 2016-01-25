@@ -44,18 +44,24 @@ def sudo(command, quiet=False, _raise=True, sudo_user=None):
 
 
 def local(command, quiet=False, _raise=True):
+
     p = subprocess.Popen(command, shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         cwd=env.cwd)
     stdout, stderr = p.communicate()
+
+    stdout = stdout.decode(env.encoding)
+    stderr = stderr.decode(env.encoding)
+
     if p.returncode != 0:
         if quiet is False:
-            for line in stderr.decode(env.encoding).split('\n'):
+            for line in stderr.split('\n'):
                 log(line.strip(), prefix='err')
         if _raise:
             raise LocalCommandError()
 
     if quiet is False:
-        for line in stdout.decode(env.encoding).split('\n'):
+        for line in stdout.split('\n'):
             log(line.strip(), prefix='out')
 
     return CommandResult(stdout, stderr, p.returncode)
@@ -66,10 +72,16 @@ def _run_command(command, quiet=False, _raise=True):
     client = context['sshclient']
     hostname = context['host_string']
 
-    if quiet is False:
-        log(command, prefix='run')
+    wrapped_command = command
 
-    stdin, stdout, stderr, rc = client.exec_command(command)
+    if quiet is False:
+        log(wrapped_command, prefix='run')
+
+    if env.cwd:
+        wrapped_command = 'cd %s && %s' % (env.cwd, command)
+
+    stdin, stdout, stderr, rc = client.exec_command(wrapped_command)
+
 
     stdout = stdout.read().decode(env.encoding)
     stderr = stderr.read().decode(env.encoding)
