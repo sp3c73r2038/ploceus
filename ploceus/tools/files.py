@@ -85,12 +85,12 @@ def chmod(path, mode, recursive=False,
     return _('chmod %s %s %s' % (recur, mode, path), sudo_user=sudo_user)
 
 
-def mkdir(path, usera=None, grp=None, mode=None,
+def mkdir(path, user=None, grp=None, mode=None,
           use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     _('mkdir -p %s' % path, sudo_user=sudo_user)
 
-    if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
+    if (user and (owner(path) != user)) or (grp and (group(path) != grp)):
         chown(dest, user, grp)
 
     if mode and (mode(path) != mode):
