@@ -2,7 +2,7 @@
 import subprocess
 
 import logging
-from ploceus.exceptions import RemoteCommandError
+from ploceus.exceptions import LocalCommandError, RemoteCommandError
 from ploceus.runtime import context_manager, env
 from ploceus.logger import log
 
