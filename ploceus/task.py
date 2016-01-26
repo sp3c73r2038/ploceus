@@ -35,6 +35,10 @@ class Task(object):
         extra_vars = extra_vars or {}
         context['extra_vars'] = extra_vars
 
+        # ansible like host_vars
+        context['extra_vars'].update(
+            g.inventory.get_target_host(hostname))
+
         # connect to remote host
         client = SSHClient()
 
