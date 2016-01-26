@@ -75,6 +75,16 @@ class Inventory(object):
         return group
 
 
+    def get_target_host(self, hostname):
+        if self.empty:
+            self._load_inventory()
+        if self.empty:
+            self.find_inventory()
+
+        host_vars = self._groups.get(hostname) or {}
+        return host_vars
+
+
     def find_inventory(self):
         if os.path.exists('hosts'):
             self.inventory = 'hosts'
