@@ -180,3 +180,6 @@ def upload_template(dest, template=None, contents=None,
 
     upload_file(dest, src=localpath, user=user, grp=grp,
                 mode=mode, quiet=True, use_sudo=use_sudo)
+
+    if _template:
+        os.unlink(localpath)
