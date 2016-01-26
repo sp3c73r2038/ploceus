@@ -86,7 +86,8 @@ class Ploceus(object):
             print('\n\tunknown task: %s\n' % self.task_name)
             return
 
-        TaskRunner.run_task_with_hosts(task, self.hosts, self.parallel)
+        TaskRunner.run_task_with_hosts(task, self.hosts, self.parallel,
+                                       extra_vars=extra_vars)
 
 
     def list_tasks(self):

@@ -20,4 +20,6 @@ def run_task_by_group(group_name, tasks,
 
     for task in tasks:
         TaskRunner.run_task_with_hosts(task, hosts,
-                                       parallel=parallel, **kwargs)
+                                       parallel=parallel,
+                                       extra_vars=extra_vars,
+                                       **kwargs)

@@ -29,8 +29,10 @@ class Task(object):
 
 
     def _run(self, hostname, extra_vars, *args, **kwargs):
-
         context = context_manager.get_context()
+
+        # TODO mask dangers context variables
+        extra_vars = extra_vars or {}
         context['extra_vars'] = extra_vars
 
         # connect to remote host
