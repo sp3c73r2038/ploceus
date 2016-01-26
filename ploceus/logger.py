@@ -2,7 +2,7 @@
 import logging
 import sys
 
-from ploceus.runtime import env
+from ploceus.runtime import context_manager
 
 
 logger = logging.getLogger('ploceus')
@@ -16,7 +16,9 @@ logger.setLevel(logging.INFO)
 def log(message, prefix=''):
     from ploceus.runtime import context_manager
 
-    if env.local_mode:
+    context = context_manager.get_context()
+
+    if 'local_mode' in context and context.get('local_mode'):
         hostname = 'local'
     else:
         context = context_manager.get_context()
