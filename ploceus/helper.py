@@ -2,10 +2,10 @@
 import logging
 import subprocess
 
-from ploceus.colors import blue, red
+from ploceus.colors import blue, green, red
 from ploceus.exceptions import LocalCommandError, RemoteCommandError
 from ploceus.runtime import context_manager, env
-from ploceus.logger import log
+from ploceus.logger import log, logger
 
 __all__ = ['run', 'sudo']
 
@@ -53,13 +53,13 @@ def local(command, quiet=False, _raise=True):
 
     context = context_manager.get_context()
 
-
     wrapped_command = command
     if context.get('cwd'):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
     if quiet is False:
-        log(wrapped_command, prefix=blue('local'))
+        _ = '[%s] %s: %s' % (green('local'), blue('run'), wrapped_command)
+        logger.info(_)
 
     p = subprocess.Popen(command, shell=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -72,13 +72,18 @@ def local(command, quiet=False, _raise=True):
     if p.returncode != 0:
         if quiet is False:
             for line in stderr.split('\n'):
-                log(line.strip(), prefix=red('err'))
+                _ = '[%s] %s: %s' %\
+                    (green('local'), red('err'), line.strip())
+                logger.error(_)
+
         if _raise:
             raise LocalCommandError()
 
     if quiet is False:
         for line in stdout.split('\n'):
-            log(line.strip(), prefix='out')
+                _ = '[%s] %s: %s' %\
+                    (green('local'), 'out', line.strip())
+                logger.info(_)
 
     return CommandResult(stdout, stderr, p.returncode)
 
