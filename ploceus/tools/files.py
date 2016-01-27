@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import hashlib
-import jinja2
 import os
 from tempfile import mkstemp
 
+import jinja2
 
-from ploceus.runtime import context_manager, env
+from ploceus.colors import blue
 from ploceus.helper import run, sudo
 from ploceus.logger import log
+from ploceus.runtime import context_manager, env
 
 
 def is_file(path, use_sudo=None, sudo_user=None):
@@ -118,7 +119,7 @@ def upload_file(dest, src=None, contents=None,
         t.close()
 
     if quiet is False:
-        log('file: %s -> %s' % (localpath, dest), prefix='upload')
+        log('file: %s -> %s' % (localpath, dest), prefix=blue('upload'))
 
 
     origin_dest = dest
@@ -163,7 +164,7 @@ def upload_template(dest, template=None, contents=None,
 
     if template is not None:
         assert contents is None
-        log('template: %s -> %s' % (template, dest), prefix='upload')
+        log('template: %s -> %s' % (template, dest), prefix=blue('upload'))
         with open(template) as f:
             t = jinja2.Template(f.read(), keep_trailing_newline=True)
             contents = t.render(**jinja_ctx)
@@ -176,7 +177,7 @@ def upload_template(dest, template=None, contents=None,
         t.write(contents)
         t.close()
         if _template is None:
-            log('template: %s -> %s' % (localpath, dest), prefix='upload')
+            log('template: %s -> %s' % (localpath, dest), prefix=blue('upload'))
 
     upload_file(dest, src=localpath, user=user, grp=grp,
                 mode=mode, quiet=True, use_sudo=use_sudo)

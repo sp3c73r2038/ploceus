@@ -2,7 +2,9 @@
 import logging
 import sys
 
+from ploceus.colors import green
 from ploceus.runtime import context_manager
+
 
 
 logger = logging.getLogger('ploceus')
@@ -25,5 +27,5 @@ def log(message, prefix=''):
         hostname = context['host_string']
 
 
-    _ = '[%s] %s: %s' % (hostname, prefix, message)
+    _ = '[%s] %s: %s' % (green(hostname), prefix, message)
     logger.info(_)
