@@ -60,6 +60,14 @@ class Task(object):
         g.add_task(self)
 
 
+    def __repr__(self):
+        return '<ploceus.task.Task %s>' % self.name
+
+
+    def __str__(self):
+        return '<ploceus.task.Task %s>' % self.name
+
+
     def run(self, hostname, extra_vars=None, *args, **kwargs):
         return self._run(hostname, extra_vars, *args, **kwargs)
 
