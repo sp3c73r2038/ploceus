@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import logging
 import subprocess
 
-import logging
+from ploceus.colors import blue, red
 from ploceus.exceptions import LocalCommandError, RemoteCommandError
 from ploceus.runtime import context_manager, env
 from ploceus.logger import log
@@ -58,7 +59,7 @@ def local(command, quiet=False, _raise=True):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
     if quiet is False:
-        log(wrapped_command, prefix='local')
+        log(wrapped_command, prefix=blue('local'))
 
     p = subprocess.Popen(command, shell=True,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -71,7 +72,7 @@ def local(command, quiet=False, _raise=True):
     if p.returncode != 0:
         if quiet is False:
             for line in stderr.split('\n'):
-                log(line.strip(), prefix='err')
+                log(line.strip(), prefix=red('err'))
         if _raise:
             raise LocalCommandError()
 
@@ -104,7 +105,7 @@ def _run_command(command, quiet=False, _raise=True):
     if rc != 0:
         if quiet is False:
             for line in stderr.split('\n'):
-                log(line.strip(), prefix='err')
+                log(line.strip(), prefix=red('err'))
 
         if _raise:
             raise RemoteCommandError(stderr)
