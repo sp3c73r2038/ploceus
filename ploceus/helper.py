@@ -77,7 +77,8 @@ def local(command, quiet=False, _raise=True):
                 logger.error(_)
 
         if _raise:
-            raise LocalCommandError()
+            raise LocalCommandError(
+                'stdout: %s\n\nstderr: %s' % (stdout, stderr))
 
     if quiet is False:
         for line in stdout.split('\n'):
@@ -113,7 +114,8 @@ def _run_command(command, quiet=False, _raise=True):
                 log(line.strip(), prefix=red('err'))
 
         if _raise:
-            raise RemoteCommandError(stderr)
+            raise RemoteCommandError(
+                'stdout: %s\n\nstderr: %s' % (stdout, stderr))
 
     if quiet is False:
         for line in stdout.split('\n'):
