@@ -123,10 +123,19 @@ class TaskRunner(object):
     @staticmethod
     def run_task_concurrently(task, hosts, **kwargs):
         threads = list()
+
+        def thread_wrapper(task, host, **kwargs):
+            try:
+                task.run(host, **kwargs)
+            except:
+                print('error when running task: %s, host: %s, kwargs: %s' %
+                      (task, host, kwargs))
+                raise
+
         for host in hosts:
 
-            t = threading.Thread(target=task.run,
-                                 args=(host,),
+            t = threading.Thread(target=thread_wrapper,
+                                 args=(task, host,),
                                  kwargs=kwargs)
             t.start()
             threads.append(t)
