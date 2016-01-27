@@ -27,13 +27,23 @@ class SSHClient(object):
 
     def _auto_auth(self, username, identities):
         for identity in identities:
-            key = paramiko.RSAKey.from_private_key_file(identity)
-            self._transport.auth_publickey(username, key)
+            try:
+                key = paramiko.RSAKey.from_private_key_file(identity)
+                self._transport.auth_publickey(username, key)
+                if self._transport.is_authenticated():
+                    break
+            except paramiko.ssh_exception.PasswordRequiredException:
+                continue
 
-            if self._transport.is_authenticated():
-                break
-
-        # TODO: agent keys
+        agent = paramiko.Agent()
+        agent_keys = agent.get_keys()
+        for key in agent_keys:
+            try:
+                self._transport.auth_publickey(username, key)
+                if self._transport.is_authenticated():
+                    break
+            except paramiko.ssh_exception.AuthenticationException:
+                continue
 
 
     def _auth_by_password(self, username, password):
@@ -67,7 +77,7 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = '~/.ssh/id_rsa'
+                identity = [os.path.expanduser('~/.ssh/id_rsa')]
             self._auto_auth(username, identity)
         else:
             self._auth_by_password()
