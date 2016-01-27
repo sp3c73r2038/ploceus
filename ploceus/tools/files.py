@@ -184,3 +184,13 @@ def upload_template(dest, template=None, contents=None,
 
     if _template:
         os.unlink(localpath)
+
+
+def md5sum(path, use_sudo=False):
+    _ = (use_sudo and sudo) or run
+    return _('md5sum %s' % path, quiet=True).stdout.strip().split()[0].lower()
+
+
+def sha1sum(path, use_sudo=False):
+    _ = (use_sudo and sudo) or run
+    return _('sha1sum %s' % path, quiet=True).stdout.strip().split()[0].lower()
