@@ -31,7 +31,7 @@ class SSHClient(object):
                 key = paramiko.RSAKey.from_private_key_file(identity)
                 self._transport.auth_publickey(username, key)
                 if self._transport.is_authenticated():
-                    break
+                    return
             except paramiko.ssh_exception.PasswordRequiredException:
                 continue
 
@@ -41,7 +41,7 @@ class SSHClient(object):
             try:
                 self._transport.auth_publickey(username, key)
                 if self._transport.is_authenticated():
-                    break
+                    return
             except paramiko.ssh_exception.AuthenticationException:
                 continue
 
