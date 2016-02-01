@@ -7,17 +7,18 @@ from ploceus.tools import system
 
 
 
-def package(pkg, update=False, version=False):
+def package(pkg, update=None, version=None):
+    log('install %s' % pkg, prefix=blue('deb'))
     if deb.is_installed(pkg):
         return
 
-    log('install %s', prefix=blue('deb'))
     deb.install(pkg, update=update, version=version)
 
 
 
 def packages(pkgs, update=False):
-    map(lambda x: package(x, update=update), pkgs)
+    for pkg in pkgs:
+        package(pkg, update=update)
 
 
 def uptodate_index(quiet=True, max_age=3600):
