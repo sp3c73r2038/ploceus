@@ -20,6 +20,7 @@ def usage():
     print('\t-i, --inventory       specify inventory file / directory')
     print('\t-g, --group           specify group of hosts in inventory')
     print('\t-P, --parallel        run task across hosts parallelly')
+    print('\t-s, --sleep           sleep between two hosts')
     print('\t--list-inventory      list all avaiable groups of hosts')
     print('\n')
 
@@ -35,6 +36,7 @@ class Ploceus(object):
         self.task_name = None
         self.group = None
         self.parallel = False
+        self.sleep = 0
 
 
     def run(self):
@@ -87,6 +89,7 @@ class Ploceus(object):
             return
 
         TaskRunner.run_task_with_hosts(task, self.hosts, self.parallel,
+                                       sleep=self.sleep,
                                        extra_vars=extra_vars)
 
 
@@ -136,6 +139,12 @@ class Ploceus(object):
         self.parallel = True
 
 
+    def set_sleep(self, args):
+        args.pop(0)
+
+        self.sleep = int(args.pop(0))
+
+
     def _handle_args(self, args):
         exit = False
 
@@ -178,6 +187,10 @@ class Ploceus(object):
 
             if args[0].strip() in ('-P', '--parallel'):
                 self.set_parallel(args)
+                continue
+
+            if args[0].strip() in ('-s', '--sleep'):
+                self.set_sleep(args)
                 continue
 
             if args[0].strip() in ('--list-inventory'):
