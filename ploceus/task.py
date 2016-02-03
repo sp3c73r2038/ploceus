@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import threading
+import time
 
 from ploceus import g
 from ploceus import exceptions
@@ -115,17 +116,20 @@ class Task(object):
 class TaskRunner(object):
 
     @staticmethod
-    def run_task_with_hosts(task, hosts, parallel=False, **kwargs):
+    def run_task_with_hosts(task, hosts, parallel=False, sleep=0, **kwargs):
         if parallel:
             TaskRunner.run_task_concurrently(task, hosts, **kwargs)
         else:
-            TaskRunner.run_task_single_thread(task, hosts, **kwargs)
+            TaskRunner.run_task_single_thread(task, hosts,
+                                              sleep=sleep, **kwargs)
 
 
     @staticmethod
-    def run_task_single_thread(task, hosts, **kwargs):
+    def run_task_single_thread(task, hosts, sleep=0, **kwargs):
         for host in hosts:
             task.run(host, **kwargs)
+            if sleep:
+                time.sleep(sleep)
 
 
     @staticmethod
