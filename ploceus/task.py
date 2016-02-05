@@ -134,6 +134,9 @@ class TaskRunner(object):
 
     @staticmethod
     def run_task_single_thread(task, hosts, sleep=0, password=None, **kwargs):
+        if hosts is None:
+            return
+
         for host in hosts:
             task.run(host, password=password, **kwargs)
             if sleep:
@@ -142,6 +145,9 @@ class TaskRunner(object):
 
     @staticmethod
     def run_task_concurrently(task, hosts, password=None, **kwargs):
+        if hosts is None:
+            return
+
         threads = list()
 
         def thread_wrapper(task, host, password, **kwargs):
