@@ -65,7 +65,8 @@ class Inventory(object):
 
         print('\n  Available groups:\n')
         for name in sorted(self._groups.keys()):
-            print('\t%s' % name)
+            if 'hosts' in self._groups.get(name):
+                print('\t%s' % name)
 
         print('\n')
 
