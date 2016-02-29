@@ -6,3 +6,4 @@ class Environment(object):
     encoding='utf-8'
     cwd = None
     local_mode = False
+    ssh_timeout = 5

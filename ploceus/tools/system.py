@@ -6,6 +6,6 @@ def time():
 
 
 def cpus():
-    return int(run(("cat /proc/cpuinfo | "
-                    "grep -P 'processor\t: "
-                    "' | wc -l"), quiet=True).stdout.strip())
+    return int(run(('cat /proc/cpuinfo | '
+                    'grep -P "processor\t:"'
+                    ' | wc -l'), quiet=True).stdout.strip())
