@@ -96,14 +96,12 @@ def _run_command(command, quiet=False, _raise=True):
 
     wrapped_command = command
 
-    if quiet is False:
-        log(wrapped_command, prefix='run')
-
     if context.get('cwd'):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
     stdin, stdout, stderr, rc = client.exec_command(wrapped_command)
-
+    if quiet is False:
+        log(wrapped_command, prefix='run')
 
     stdout = stdout.read().decode(env.encoding)
     stderr = stderr.read().decode(env.encoding)
