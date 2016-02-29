@@ -113,7 +113,8 @@ class Task(object):
             if callable(f):
                 f(context)
 
-        client.close()
+        # TODO: detect task running in task
+        # client.close()
 
         return rv
 
