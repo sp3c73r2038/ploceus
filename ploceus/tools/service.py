@@ -4,7 +4,8 @@ from ploceus.helper import sudo
 
 def is_running(service):
     # TODO: distro family
-    if 'running' in _service(service, 'status'):
+    _ = _service(service, 'status')
+    if _.succeeded and 'running' in _.stdout.strip():
         return True
     return False
 
@@ -27,5 +28,5 @@ def reload(service):
 
 def _service(service, action):
     rv = sudo('service %s %s' % (service, action),
-              quiet=True).stdout.strip()
+              quiet=True, _raise=False)
     return rv
