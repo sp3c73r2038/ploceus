@@ -59,8 +59,13 @@ class SSHClient(object):
 
 
     def connect(self, hostname, username=None, password=None, port=22):
+
+        sflags = socket.SOCK_STREAM
+        if hasattr(socket, 'SOCK_CLOEXEC'):
+            sflags |= socket.SOCK_CLOEXEC
+
         sock = socket.socket(socket.AF_INET,
-                             socket.SOCK_STREAM | socket.SOCK_CLOEXEC)
+                             socket.SOCK_STREAM | sflags)
         sock.connect((hostname, port))
         self._transport = paramiko.transport.Transport(sock)
         self._transport.start_client()
