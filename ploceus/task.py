@@ -90,7 +90,12 @@ class Task(object):
         password = None
         if 'password' in kwargs:
             password = kwargs.pop('password')
-        username = client.connect(hostname, username=self.ssh_user,
+
+        username = self.ssh_user
+        if '@' in hostname:
+            username, hostname = hostname.split('@', maxsplit=1)
+
+        username = client.connect(hostname, username=username,
                                   password=password)
 
         # setting context
