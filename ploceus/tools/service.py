@@ -5,7 +5,7 @@ from ploceus.helper import sudo
 def is_running(service):
     # TODO: distro family
     _ = _service(service, 'status')
-    if _.succeeded and 'running' in _.stdout.strip():
+    if _.succeeded and 'running' in _.stdout.strip().lower():
         return True
     return False
 
