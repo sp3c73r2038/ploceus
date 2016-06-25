@@ -20,20 +20,16 @@ def test():
 list tasks.
 
 ```
-$ ve ploceus -l
+$ /path/to/ploceus -l
 ```
 
 run tasks with hosts.
 
 ```
-$ ve ploceus -H example.com test
+$ /path/to/ploceus -H example.com test
 ```
 
 
 ## License
 
 GPL-2
-
-## note
-
-ve - https://github.com/erning/ve
