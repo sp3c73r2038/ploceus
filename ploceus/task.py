@@ -8,6 +8,26 @@ from ploceus.runtime import context_manager, env
 from ploceus.ssh import SSHClient
 
 
+
+class TaskResult(object):
+
+    def __init__(self, name):
+        self.rv = None
+        self.error = None
+        self.name = name
+
+    @property
+    def failed(self):
+        return isinstance(self.error, Exception)
+
+
+    def __repr__(self):
+        status = 'ok'
+        if self.failed:
+            status = 'failed'
+        return '<#TaskResult %s, %s>' % (self.name, status)
+
+
 def run_task_by_host(hostname, tasks,
                      extra_vars=None, **kwargs):
     from ploceus import g
@@ -43,7 +63,6 @@ def run_task_by_group(group_name, tasks,
                                        **kwargs)
 
 
-
 class Task(object):
 
     def __init__(self, func, ssh_user=None):
@@ -70,7 +89,17 @@ class Task(object):
 
 
     def run(self, hostname, extra_vars=None, *args, **kwargs):
-        return self._run(hostname, extra_vars, *args, **kwargs)
+        rv = TaskResult(self.name)
+        try:
+            _ = self._run(hostname, extra_vars, *args, **kwargs)
+            rv.rv = _
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            rv.error = e
+            if env.break_on_error:
+                raise
+        return rv
 
 
     def _run(self, hostname, extra_vars, *args, **kwargs):
@@ -107,12 +136,7 @@ class Task(object):
             if callable(f):
                 f(context)
 
-        rv = None
-        try:
-            rv = self.func(*args, **kwargs)
-        except:
-            import traceback
-            traceback.print_exc()
+        rv = self.func(*args, **kwargs)
 
         for f in env.post_task_hooks:
             if callable(f):
