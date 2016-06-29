@@ -130,24 +130,27 @@ class TaskRunner(object):
                             sleep=0, password=None, **kwargs):
 
         if parallel:
-            TaskRunner.run_task_concurrently(task, hosts,
-                                             password=password, **kwargs)
+            # TODO: return values
+            return TaskRunner.run_task_concurrently(
+                task, hosts, password=password, **kwargs)
         else:
-            TaskRunner.run_task_single_thread(task, hosts,
-                                              sleep=sleep,
-                                              password=password, **kwargs)
+            return TaskRunner.run_task_single_thread(
+                task, hosts, sleep=sleep, password=password, **kwargs)
 
 
     @staticmethod
     def run_task_single_thread(task, hosts, sleep=0, password=None, **kwargs):
+        rv = {}
         if hosts is None:
             return
 
         for host in hosts:
-            task.run(host, password=password, **kwargs)
+            _rv = task.run(host, password=password, **kwargs)
+            rv[host] = _rv
             if sleep:
                 time.sleep(sleep)
 
+        return rv
 
     @staticmethod
     def run_task_concurrently(task, hosts, password=None, **kwargs):

@@ -17,20 +17,20 @@ __all__ = ['run', 'sudo']
 
 class CommandResult(object):
 
-    def __init__(self, stdout, stderr, value):
+    def __init__(self, stdout, stderr, exitvalue):
         self.stdout = stdout
         self.stderr = stderr
-        self.value = value
+        self.exitvalue = exitvalue
 
 
     @property
     def failed(self):
-        return self.value is not 0
+        return self.exitvalue != 0
 
 
     @property
     def succeeded(self):
-        return self.value is 0
+        return self.exitvalue == 0
 
 
 
