@@ -7,3 +7,4 @@ class Environment(object):
     cwd = None
     local_mode = False
     ssh_timeout = 5
+    break_on_error = True
