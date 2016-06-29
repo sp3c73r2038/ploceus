@@ -66,11 +66,17 @@ class SSHClient(object):
 
         sock = socket.socket(socket.AF_INET,
                              socket.SOCK_STREAM | sflags)
+
+
+        host_sshconfig = self._sshconfig.lookup(hostname)
+        if 'port' in host_sshconfig:
+            port = int(host_sshconfig['port'])
+
         sock.connect((hostname, port))
         self._transport = paramiko.transport.Transport(sock)
         self._transport.start_client()
 
-        host_sshconfig = self._sshconfig.lookup(hostname)
+
 
         if username is None:
             username = getpass.getuser()
