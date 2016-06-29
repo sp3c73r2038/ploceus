@@ -1,4 +1,4 @@
-.virtualenv/
+/.virtualenv/
 *.py[co]
 *.egg-info/
 
@@ -7,3 +7,4 @@
 /Ploceusfile.py
 /ploceusfile.py
 /hosts/
+/local/
