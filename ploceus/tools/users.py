@@ -19,7 +19,7 @@ def create_user(name, uid, gid,
         command += ' -d %s' % home
 
     if groups:
-        command += ' -G %s' % ' '.join(groups)
+        command += ' -G %s' % ','.join(groups)
 
     if system:
         command += ' --system'
@@ -48,7 +48,7 @@ def modify_user(name, uid=None, gid=None, new_name=None,
         command += ' -d %s' % home
 
     if groups:
-        command += ' -G %s' % ' '.join(groups)
+        command += ' -G %s' % ','.join(groups)
 
     if system:
         command += ' --system'
