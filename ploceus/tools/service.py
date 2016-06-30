@@ -28,5 +28,5 @@ def reload(service):
 
 def _service(service, action):
     rv = sudo('service %s %s' % (service, action),
-              quiet=True, _raise=False)
+              quiet=False, _raise=False)
     return rv
