@@ -17,3 +17,15 @@ def directory(path, user=None, grp=None,
     if mode and (files.mode(path) != mode):
         files.chmod(path, mode=mode, recursive=recursive,
                     use_sudo=use_sudo)
+
+def file(path, user=None, grp=None,
+         mode=None, use_sudo=None):
+
+    if (user and (files.owner(path) != user)) or\
+       ((grp and files.group(path) != grp)):
+        files.chown(path, user=user, grp=grp,
+                    use_sudo=use_sudo)
+
+    if mode and (files.mode(path) != mode):
+        files.chmod(path, mode=mode,
+                    use_sudo=use_sudo)
