@@ -5,6 +5,7 @@ import socket
 
 import paramiko
 
+from ploceus.runtime import env
 
 class SSHClient(object):
 
@@ -67,6 +68,7 @@ class SSHClient(object):
         sock = socket.socket(socket.AF_INET,
                              socket.SOCK_STREAM | sflags)
 
+        sock.settimeout(env.ssh_timeout)
 
         host_sshconfig = self._sshconfig.lookup(hostname)
         if 'port' in host_sshconfig:
