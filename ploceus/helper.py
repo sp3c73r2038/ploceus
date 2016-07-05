@@ -210,14 +210,14 @@ def local(command, quiet=False, _raise=True):
             stdout.append(line)
             if not quiet:
                 _ = '[%s] %s: %s' %\
-                    (green('local'), 'out', line.strip())
+                    (green('local'), 'stdout', line.strip())
                 logger.info(_)
         if errline:
             line = errline.decode(env.encoding).strip()
             stderr.append(line)
             if not quiet:
                 _ = '[%s] %s: %s' %\
-                    (green('local'), red('err'), line.strip())
+                    (green('local'), red('stderr'), line.strip())
                 logger.error(_)
 
     stdout = '\n'.join(stdout)
@@ -251,7 +251,7 @@ def _run_command(command, quiet=False, _raise=True):
     if rc != 0:
         if quiet is False:
             for line in stderr.split('\n'):
-                log(line.strip(), prefix=red('err'))
+                log(line.strip(), prefix=red('stderr'))
 
         if _raise:
             raise RemoteCommandError(
@@ -259,6 +259,6 @@ def _run_command(command, quiet=False, _raise=True):
 
     if quiet is False:
         for line in stdout.split('\n'):
-                log(line.strip(), prefix='out')
+                log(line.strip(), prefix='stdout')
 
     return stdin, stdout, stderr, rc
