@@ -8,6 +8,19 @@ from ploceus.runtime import context_manager, env
 from ploceus.ssh import SSHClient
 
 
+SSH_CLIENTS = []
+
+
+def append_ssh_client(client):
+    global SSH_CLIENTS
+    SSH_CLIENTS.append(client)
+
+
+def dispose_ssh_clients():
+    global SSH_CLIENTS
+    for client in SSH_CLIENTS:
+        client.close()
+
 
 class TaskResult(object):
 
@@ -115,6 +128,7 @@ class Task(object):
 
         # connect to remote host
         client = SSHClient()
+        append_ssh_client(client)
 
         password = None
         if 'password' in kwargs:
@@ -142,9 +156,6 @@ class Task(object):
             if callable(f):
                 f(context)
 
-        # TODO: detect task running in task
-        # client.close()
-
         return rv
 
 class TaskRunner(object):
@@ -153,13 +164,18 @@ class TaskRunner(object):
     def run_task_with_hosts(task, hosts, parallel=False,
                             sleep=0, password=None, **kwargs):
 
+        rv = {}
         if parallel:
             # TODO: return values
-            return TaskRunner.run_task_concurrently(
+            rv = TaskRunner.run_task_concurrently(
                 task, hosts, password=password, **kwargs)
         else:
-            return TaskRunner.run_task_single_thread(
+            rv = TaskRunner.run_task_single_thread(
                 task, hosts, sleep=sleep, password=password, **kwargs)
+
+        # close all clients
+        dispose_ssh_clients()
+        return rv
 
 
     @staticmethod
