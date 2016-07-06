@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import argparse
 import sys
 
 from ploceus import g
@@ -8,32 +9,10 @@ from ploceus.inventory import Inventory
 from ploceus.executor import run_task
 
 
-
-def usage():
-    print('\n  Ploceus, programmer-friendly automated remote execution tool.')
-    print('')
-    print('    ploceus [options] <task_name>\n')
-    print('\t-h, --help            show this help')
-    print('\t-l, --list-tasks      list all avaiable tasks')
-    print('\t-f, --ploceus-file    specify Ploceusfile')
-    print('\t-H, --hosts           specify hosts')
-    print('\t-i, --inventory       specify inventory file / directory')
-    print('\t-g, --group           specify group of hosts in inventory')
-    print('\t-P, --parallel        run task across hosts parallelly')
-    print('\t-s, --sleep           sleep between two hosts')
-    print('\t-k, --disable-pubkey  do not use pubkey to connect')
-    print('\t-p, --password        use password to connect')
-    print('\t--list-inventory      list all avaiable groups of hosts')
-    print('\n')
-
-
 class Ploceus(object):
-
 
     def __init__(self):
         self.ploceusfile = None
-        self.should_list_tasks = False
-        self.should_list_inventory = False
         self.hosts = []
         self.task_name = None
         self.group = None
@@ -42,67 +21,108 @@ class Ploceus(object):
         self.disable_pubkey = False
         self.password = None
 
-
-
     def run(self):
-        if len(sys.argv) == 1:
-            usage()
-            return
 
-        exit = self._handle_args(sys.argv[1:])
+        ap = argparse.ArgumentParser()
+        ap.add_argument(
+            '-l', '--list-tasks', action='store_true',
+            help='list all avaiable tasks')
+        ap.add_argument(
+            '-I', '--list-inventory', action='store_true',
+            help='list all avaiable groups of hosts'
+        )
+        ap.add_argument(
+            '-f', '--ploceus-file', help='speicify Ploceusfile')
+        ap.add_argument(
+            '-H', '--host', help='specify target host')
+        ap.add_argument(
+            '-i', '--inventory', help='specify inventory file/directory')
+        ap.add_argument(
+            '-g', '--group', help='specify hosts group')
+        ap.add_argument(
+            '-P', '--parallel', action='store_true',
+            help='run task across hosts parallelly'
+        )
+        ap.add_argument(
+            '-s', '--sleep', default=0, type=int,
+            help='sleep between two hosts'
+        )
+        ap.add_argument(
+            '-k', '--disable-pubkey',
+            action='store_true',
+            help='do not use pubkey to authenticate'
+        )
+        ap.add_argument(
+            '-p', '--password', help='use password to connect'
+        )
+        ap.add_argument(
+            'task_name', nargs='?',
+            help='task name to carry out')
 
-        if self.ploceusfile is None:
-            ploceusfile.find_ploceusfile()
+        options = ap.parse_args()
+        print(options)
+
+        ploceus_filename = options.ploceus_file
+        if options.ploceus_file is None:
+            ploceus_filename = ploceusfile.find_ploceusfile()
         else:
-            ploceusfile.ploceusfile_from_pyfile(self.ploceusfile)
+            ploceusfile.ploceusfile_from_pyfile(options.ploceus_file)
 
-        if exit:
-            return 0
-
-        if self.should_list_tasks:
+        if options.list_tasks:
             self.list_tasks()
-            return 0
+            return 1
 
-        if self.should_list_inventory:
+        g.inventory = Inventory(options.inventory)
+
+        if options.list_inventory:
             if g.inventory.empty:
                 raise ArgumentError('cannot find inventory.')
             self.list_inventory()
-            return 0
+            return 1
 
-        if self.group and g.inventory.empty:
-            raise ArgumentError('Specify inventory when using group, please.')
+        if options.group and g.inventory.empty:
+            raise ArgumentError(
+                'Specify inventory when using group, please.')
 
+        hosts = options.host or []
         extra_vars = None
-        if self.group:
-            group_hosts = g.inventory.get_target_hosts(self.group)
+        if options.group:
+            group_hosts = g.inventory.get_target_hosts(options.group)
             if group_hosts:
-                self.hosts += group_hosts['hosts']
+                hosts += group_hosts['hosts']
                 extra_vars = group_hosts.get('vars')
 
+        if options.disable_pubkey and options.password is None:
+            raise ArgumentError(
+                '--disable-pubkey required but no --password provided.')
 
-        if self.disable_pubkey and self.password is None:
-            raise ArgumentError(('--disable-pubkey required but '
-                                 'no --password provided.'))
+        if options.task_name is None:
+            raise ArgumentError(
+                'Specify a task to run, please. '
+                'You can use -l to list tasks.')
 
-        if self.task_name is None:
-            raise ArgumentError(('Specify a task to run, please. '
-                                 'You can use -l to list tasks.'))
+        if type(hosts) != list:
+            hosts = [hosts]
 
-        # TODO project level logger
-        print('Ploceusfile: %s' % self.ploceusfile)
-        print('task_name: %s' % self.task_name)
-        print('hosts: %s' % self.hosts)
+        if len(hosts) == 0:
+            raise ArgumentError(
+                'no hosts specified.')
 
-        task = g.tasks.get(self.task_name)
+        task = g.tasks.get(options.task_name)
         if task is None:
-            print('\n\tunknown task: %s\n' % self.task_name)
+            print('\n\tunknown task: %s\n' % options.task_name)
             return
 
+        # TODO project level logger
+        print('Ploceusfile: %s' % ploceus_filename)
+        print('task_name: %s' % options.task_name)
+        print('host: %s' % hosts)
+
         run_task(
-            task, self.hosts,
-            sleep=self.sleep,
-            parallel=self.parallel,
-            ssh_pwd=self.password,
+            task, hosts,
+            sleep=options.sleep,
+            parallel=options.parallel,
+            ssh_pwd=options.password,
             extra_vars=extra_vars
         )
 
@@ -121,124 +141,6 @@ class Ploceus(object):
 
     def list_inventory(self):
         g.inventory.list_inventory()
-
-
-    def set_ploceusfile(self, args):
-        args.pop(0)
-        self.ploceusfile = args.pop(0)
-
-
-    def set_hosts(self, args):
-        args.pop(0)
-
-        while len(args) > 1 and not args[0].startswith('-'):
-            self.hosts.append(args.pop(0).strip())
-
-
-    def set_inventory(self, args):
-        args.pop(0)
-
-        g.inventory = inventory = Inventory(args.pop(0))
-
-
-    def set_group(self, args):
-        args.pop(0)
-
-        self.group = args.pop(0)
-
-
-    def set_parallel(self, args):
-        args.pop(0)
-
-        self.parallel = True
-
-
-    def set_sleep(self, args):
-        args.pop(0)
-
-        self.sleep = int(args.pop(0))
-
-
-    def set_disable_pubkey(self, args):
-        args.pop(0)
-
-        self.disable_pubkey = True
-
-
-    def set_password(self, args):
-        args.pop(0)
-
-        self.password = args.pop(0)
-
-
-    def _handle_args(self, args):
-        exit = False
-
-        if len(args) == 0:
-            usage()
-            return True
-
-        while len(args) > 0:
-            if exit:
-                return exit
-
-            if args[0].strip() in ('-h', '--help'):
-                usage()
-                return True
-
-            if args[0].strip() in ('-l', '--list-tasks'):
-                args.pop(0)
-                self.should_list_tasks = True
-                continue
-
-            if args[0].strip() in ('-f', '--ploceus-file'):
-                self.set_ploceusfile(args)
-                continue
-
-            if args[0].strip() in ('-H', '--hosts'):
-                self.set_hosts(args)
-                continue
-
-            if args[0].strip() in ('-i', '--inventory'):
-                self.set_inventory(args)
-                continue
-
-            if args[0].strip() in ('-g', '--group'):
-                self.set_group(args)
-                continue
-
-            if args[0].strip() in ('-g', '--group'):
-                self.set_group(args)
-                continue
-
-            if args[0].strip() in ('-P', '--parallel'):
-                self.set_parallel(args)
-                continue
-
-            if args[0].strip() in ('-s', '--sleep'):
-                self.set_sleep(args)
-                continue
-
-            if args[0].strip() in ('-k', '--disable-pubkey'):
-                self.set_disable_pubkey(args)
-                continue
-
-            if args[0].strip() in ('-p', '--password'):
-                self.set_password(args)
-                continue
-
-            if args[0].strip() in ('-I', '--list-inventory'):
-                args.pop(0)
-                self.should_list_inventory = True
-                continue
-
-            self.task_name = args.pop(0)
-            if len(args) > 1:
-                print('\n\tplease specify all options before <task>\n')
-                return True
-            break
-
-
 
 def main():
     ploceus = Ploceus()

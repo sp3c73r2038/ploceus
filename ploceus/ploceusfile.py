@@ -12,9 +12,10 @@ def find_ploceusfile():
         if fn.endswith('.py'):
             module_name = fn[:-3]
             ploceusfile_from_module(module_name)
-            return
+            return fn
 
         ploceusfile_from_pyfile(fn)
+        return fn
 
 
 def ploceusfile_from_module(module_name):
