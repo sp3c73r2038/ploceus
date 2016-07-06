@@ -3,35 +3,45 @@ import threading
 import time
 
 from ploceus import g
-from ploceus import exceptions
 from ploceus.runtime import context_manager, env
-from ploceus.ssh import SSHClient
 
-
-SSH_CLIENTS = []
-
-
-def append_ssh_client(client):
-    global SSH_CLIENTS
-    SSH_CLIENTS.append(client)
-
-
-def dispose_ssh_clients():
-    global SSH_CLIENTS
-    for client in SSH_CLIENTS:
-        client.close()
+        # ansible like host_vars
+#        context['extra_vars'].update(
+#            g.inventory.get_target_host(hostname))
 
 
 class TaskResult(object):
+    """class that represents Task running result state
+    """
 
     def __init__(self, name):
+        """
+        Args:
+            name (str): task name, usually set by task itself
+        """
         self.rv = None
         self.error = None
         self.name = name
 
+
     @property
     def failed(self):
+        """indicate whether task is finished without error
+
+        Returns:
+            bool: True if failed, False if ok
+        """
         return isinstance(self.error, Exception)
+
+
+    @property
+    def ok(self):
+        """indicate whether task is finished normally
+
+        Returns:
+            bool: True if ok, False if failed
+        """
+        return self.error is None
 
 
     def __repr__(self):
@@ -41,44 +51,17 @@ class TaskResult(object):
         return '<#TaskResult %s, %s>' % (self.name, status)
 
 
-def run_task_by_host(hostname, tasks,
-                     extra_vars=None, **kwargs):
-    from ploceus import g
-    hosts = [hostname]
-    extra_vars = extra_vars or {}
-
-    if type(tasks) != list:
-        tasks = [tasks]
-
-    for task in tasks:
-        TaskRunner.run_task_with_hosts(task, hosts,
-                                       extra_vars=extra_vars,
-                                       **kwargs)
-
-
-def run_task_by_group(group_name, tasks,
-                      extra_vars=None, parallel=False, **kwargs):
-    from ploceus import g
-    g.inventory.find_inventory()
-    group = g.inventory.get_target_hosts(group_name)
-    hosts = group['hosts']
-    extra_vars = extra_vars or {}
-    if 'vars' in group:
-        extra_vars.update(group['vars'])
-
-    if type(tasks) != list:
-        tasks = [tasks]
-
-    for task in tasks:
-        TaskRunner.run_task_with_hosts(task, hosts,
-                                       parallel=parallel,
-                                       extra_vars=extra_vars,
-                                       **kwargs)
-
-
 class Task(object):
+    """function marked as a ``Task'' object
+    """
+
+    func = None
+    ssh_user = None
+    name = None
 
     def __init__(self, func, ssh_user=None):
+        """create a ``Task'' object, register it to global store
+        """
         self.func = func
         self.ssh_user = ssh_user
 
@@ -101,10 +84,19 @@ class Task(object):
         return '<ploceus.task.Task %s>' % self.name
 
 
-    def run(self, hostname, extra_vars=None, *args, **kwargs):
+    def run(self, extra_vars, **kwargs):
+        """wrapper, execute task against single host
+
+        Args:
+            extra_vars (dict): additional variable will be inserted into context
+            **kwargs (dict): keyword arguments pass to decorated function
+
+        Returns:
+            TaskResult: running result
+        """
         rv = TaskResult(self.name)
         try:
-            _ = self._run(hostname, extra_vars, *args, **kwargs)
+            _ = self._run(extra_vars, **kwargs)
             rv.rv = _
         except Exception as e:
             import traceback
@@ -115,113 +107,30 @@ class Task(object):
         return rv
 
 
-    def _run(self, hostname, extra_vars, *args, **kwargs):
+    def _run(self, extra_vars, **kwargs):
+        """wrapper, execute task against single host
+
+        Args:
+            extra_vars (dict): additional variable will be inserted into context
+            **kwargs (dict): keyword arguments pass to decorated function
+
+        Returns:
+            return value of decorated function
+        """
         context = context_manager.get_context()
 
-        # TODO mask dangers context variables
+        # TODO: mask dangers context variables
         extra_vars = extra_vars or {}
         context['extra_vars'] = extra_vars
-
-        # ansible like host_vars
-        context['extra_vars'].update(
-            g.inventory.get_target_host(hostname))
-
-        # connect to remote host
-        client = SSHClient()
-        append_ssh_client(client)
-
-        password = None
-        if 'password' in kwargs:
-            password = kwargs.pop('password')
-
-        username = self.ssh_user
-        if '@' in hostname:
-            username, hostname = hostname.split('@', maxsplit=1)
-
-        username = client.connect(hostname, username=username,
-                                  password=password)
-
-        # setting context
-        context['sshclient'] = client
-        context['host_string'] = hostname
-        context['username'] = username
 
         for f in env.pre_task_hooks:
             if callable(f):
                 f(context)
 
-        rv = self.func(*args, **kwargs)
+        rv = self.func(**kwargs)
 
         for f in env.post_task_hooks:
             if callable(f):
                 f(context)
 
         return rv
-
-class TaskRunner(object):
-
-    @staticmethod
-    def run_task_with_hosts(task, hosts, parallel=False,
-                            sleep=0, password=None, **kwargs):
-
-        rv = {}
-        if parallel:
-            # TODO: return values
-            rv = TaskRunner.run_task_concurrently(
-                task, hosts, password=password, **kwargs)
-        else:
-            rv = TaskRunner.run_task_single_thread(
-                task, hosts, sleep=sleep, password=password, **kwargs)
-
-        # close all clients
-        dispose_ssh_clients()
-        return rv
-
-
-    @staticmethod
-    def run_task_single_thread(task, hosts, sleep=0, password=None, **kwargs):
-        rv = {}
-        if hosts is None:
-            return
-
-        for host in hosts:
-            _rv = task.run(host, password=password, **kwargs)
-            rv[host] = _rv
-            if sleep:
-                time.sleep(sleep)
-
-        return rv
-
-    @staticmethod
-    def run_task_concurrently(task, hosts, password=None, **kwargs):
-        if hosts is None:
-            return
-
-        threads = list()
-
-        def thread_wrapper(task, host, password, **kwargs):
-            try:
-                task.run(host, password=password, **kwargs)
-            except:
-                print('error when running task: %s, host: %s, kwargs: %s' %
-                      (task, host, kwargs))
-                raise
-
-        for host in hosts:
-
-            t = threading.Thread(target=thread_wrapper,
-                                 args=(task, host, password, ),
-                                 kwargs=kwargs)
-            t.start()
-            threads.append(t)
-
-        while True:
-            for t in threads:
-                if t.is_alive():
-                    t.join(timeout=1)
-                else:
-                    threads.remove(t)
-                    break
-
-            if len(threads) == 0:
-                break
