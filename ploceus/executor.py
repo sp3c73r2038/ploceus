@@ -31,7 +31,6 @@ def group_task(tasks, group, inventory=None,
         extra_vars (dict): additional variables which be inserted into context
         **kwargs (dict): keyword arguments will pass to decorated function
     """
-    g.inventory = Inventory(inventory)
     if g.inventory.empty:
         raise ArgumentError('cannot find inventory.')
     group_hosts = g.inventory.get_target_hosts(group)
