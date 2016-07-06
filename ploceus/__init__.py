@@ -14,3 +14,7 @@ class GlobalStore(object):
         self.tasks[task.name] = task
 
 g = GlobalStore()
+
+
+def setup():
+    g.inventory.setup()

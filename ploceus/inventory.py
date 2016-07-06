@@ -9,9 +9,17 @@ from ploceus.exceptions import NoGroupFoundError
 
 class Inventory(object):
 
+    inventory = None
+    _groups = {}
+
     def __init__(self, inventory=None):
         self.inventory = inventory
-        self._groups = None
+
+    def setup(self):
+        if self.inventory is None:
+            self.find_inventory()
+
+        self._load_inventory()
 
 
     def _load_inventory(self):
@@ -41,25 +49,12 @@ class Inventory(object):
         with open(fname) as f:
             return yaml.load(f.read())
 
-
     @property
     def empty(self):
-        if self.inventory is None:
-            self.find_inventory()
-
-        if self._groups is None:
-            self._load_inventory()
-
-        if self._groups is None:
-            return True
-
         return len(self._groups.keys()) <= 0
 
 
     def list_inventory(self):
-        if self._groups is None:
-            self._load_inventory()
-
         if len(self._groups.keys()) == 0:
             print('\n    No group defined.\n')
 
@@ -72,11 +67,6 @@ class Inventory(object):
 
 
     def get_target_hosts(self, group_name):
-        if self.empty:
-            self._load_inventory()
-        if self.empty:
-            self.find_inventory()
-
         group = self._groups.get(group_name)
         if group is None:
             raise NoGroupFoundError('no group named %s found' % group_name)
@@ -85,10 +75,6 @@ class Inventory(object):
 
 
     def get_target_host(self, hostname):
-        if self.empty:
-            self._load_inventory()
-        if self.empty:
-            self.find_inventory()
         if self.empty:
             return {}
 
@@ -99,4 +85,3 @@ class Inventory(object):
     def find_inventory(self):
         if os.path.exists('hosts'):
             self.inventory = 'hosts'
-            self._load_inventory()

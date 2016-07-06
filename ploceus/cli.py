@@ -73,6 +73,7 @@ class Ploceus(object):
             return 1
 
         g.inventory = Inventory(options.inventory)
+        g.inventory.setup()
 
         if options.list_inventory:
             if g.inventory.empty:
