@@ -7,11 +7,17 @@ from ploceus.utils._collections import ThreadLocalRegistry
 
 class Context(dict): pass
 
+
+def new_context():
+    rv = Context()
+    rv['extra_vars'] = {}
+    return rv
+
 # TODO: scope
 class ContextManager(object):
 
     def __init__(self):
-        self.context = ThreadLocalRegistry(lambda : Context())
+        self.context = ThreadLocalRegistry(new_context)
 
 
     def get_context(self):

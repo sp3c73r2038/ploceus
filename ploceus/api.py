@@ -3,4 +3,4 @@ from ploceus.context import cd, local_mode
 from ploceus.decorator import task
 from ploceus.helper import local, run, sudo
 from ploceus.runtime import env, context_manager
-from ploceus.executor import run_task
+from ploceus.executor import group_task, run_task

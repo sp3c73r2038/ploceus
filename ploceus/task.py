@@ -5,9 +5,6 @@ import time
 from ploceus import g
 from ploceus.runtime import context_manager, env
 
-        # ansible like host_vars
-#        context['extra_vars'].update(
-#            g.inventory.get_target_host(hostname))
 
 
 class TaskResult(object):
