@@ -5,7 +5,7 @@ from ploceus import g
 from ploceus import ploceusfile
 from ploceus.exceptions import ArgumentError
 from ploceus.inventory import Inventory
-from ploceus.task import TaskRunner
+from ploceus.executor import run_task
 
 
 
@@ -98,10 +98,13 @@ class Ploceus(object):
             print('\n\tunknown task: %s\n' % self.task_name)
             return
 
-        TaskRunner.run_task_with_hosts(task, self.hosts, self.parallel,
-                                       sleep=self.sleep,
-                                       password=self.password,
-                                       extra_vars=extra_vars)
+        run_task(
+            task, self.hosts,
+            sleep=self.sleep,
+            parallel=self.parallel,
+            ssh_pwd=self.password,
+            extra_vars=extra_vars
+        )
 
 
     def list_tasks(self):
