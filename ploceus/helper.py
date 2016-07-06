@@ -23,6 +23,14 @@ class CommandResult(object):
         self.exitvalue = exitvalue
 
 
+    def __repr__(self):
+        return '<#CommandResult %s>' % self.status()
+
+    def status(self):
+        if self.failed:
+            return 'failed'
+        return 'succeeded'
+
     @property
     def failed(self):
         return self.exitvalue != 0
@@ -32,6 +40,9 @@ class CommandResult(object):
     def succeeded(self):
         return self.exitvalue == 0
 
+    @property
+    def ok(self):
+        return self.succeeded
 
 
 def nb_fd_readline(fd):
