@@ -8,7 +8,7 @@ from ploceus.runtime import context_manager
 
 
 logger = logging.getLogger('ploceus')
-logger.handlers.clear()
+del logger.handlers[:]
 hdl = logging.StreamHandler(sys.stderr)
 hdl.setLevel(logging.INFO)
 logger.addHandler(hdl)
