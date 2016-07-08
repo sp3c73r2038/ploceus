@@ -60,7 +60,7 @@ class Ploceus(object):
             help='task name to carry out')
 
         options = ap.parse_args()
-        print(options)
+        # print(options)
 
         ploceus_filename = options.ploceus_file
         if options.ploceus_file is None:
