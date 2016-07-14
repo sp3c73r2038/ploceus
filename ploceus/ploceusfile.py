@@ -9,17 +9,8 @@ def find_ploceusfile():
         if not os.path.isfile(fn):
             continue
 
-        if fn.endswith('.py'):
-            module_name = fn[:-3]
-            ploceusfile_from_module(module_name)
-            return fn
-
         ploceusfile_from_pyfile(fn)
         return fn
-
-
-def ploceusfile_from_module(module_name):
-    __import__(module_name, fromlist=[''])
 
 
 def ploceusfile_from_pyfile(filename):
