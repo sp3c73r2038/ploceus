@@ -94,10 +94,21 @@ def mkdir(path, user=None, grp=None, mode=None,
     _('mkdir -p %s' % path, sudo_user=sudo_user)
 
     if (user and (owner(path) != user)) or (grp and (group(path) != grp)):
-        chown(path, user, grp)
+        chown(path, user, grp, use_sudo=use_sudo, sudo_user=sudo_user)
 
     if mode and (mode(path) != mode):
-        chmod(path, mode)
+        chmod(path, mode, use_sudo=use_sudo, sudo_user=sudo_user)
+
+
+def symlink(src, dest, user=None, grp=None,
+            force=None, use_sudo=None, sudo_user=None):
+    _ = (use_sudo and sudo) or run
+    _force = ''
+    if force:
+        _force = 'f'
+    cmd = 'ln -sn%s %s %s' % (_force, src, dest)
+    _('mkdir -p %s' % path, sudo_user=sudo_user)
+
 
 
 def upload_file(dest, src=None, contents=None,
