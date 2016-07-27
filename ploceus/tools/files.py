@@ -11,6 +11,11 @@ from ploceus.logger import log
 from ploceus.runtime import context_manager, env
 
 
+def _jinja_make_globals(t):
+    _globals = dict(max=max)
+    t.globals = dict(t.globals, **_globals)
+
+
 def is_file(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     return _('test -f %s' % path,
@@ -178,6 +183,7 @@ def upload_template(dest, template=None, contents=None,
         log('template: %s -> %s' % (template, dest), prefix=blue('upload'))
         with open(template) as f:
             t = jinja2.Template(f.read(), keep_trailing_newline=True)
+            _jinja_make_globals(t)
             contents = t.render(**jinja_ctx)
             template = None
 
