@@ -34,7 +34,8 @@ class Ploceus(object):
         ap.add_argument(
             '-f', '--ploceus-file', help='speicify Ploceusfile')
         ap.add_argument(
-            '-H', '--host', help='specify target host')
+            '-H', '--host', action='append', help='specify target host',
+            default=[])
         ap.add_argument(
             '-i', '--inventory', help='specify inventory file/directory')
         ap.add_argument(
@@ -105,9 +106,6 @@ class Ploceus(object):
             raise ArgumentError(
                 'Specify a task to run, please. '
                 'You can use -l to list tasks.')
-
-        if type(hosts) != list:
-            hosts = [hosts]
 
         if len(hosts) == 0:
             raise ArgumentError(
