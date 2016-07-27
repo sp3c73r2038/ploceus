@@ -56,6 +56,10 @@ class Ploceus(object):
             '-p', '--password', help='use password to connect'
         )
         ap.add_argument(
+            '--args', help='arguments passing to task',
+            action='append', default=[],
+        )
+        ap.add_argument(
             'task_name', nargs='?',
             help='task name to carry out')
 
@@ -114,6 +118,13 @@ class Ploceus(object):
             print('\n\tunknown task: %s\n' % options.task_name)
             return
 
+        kwargs = {}
+
+        if options.args:
+            for i in options.args:
+                k, v = i.split(':', 1)
+                kwargs[k] = v
+
         # TODO project level logger
         print('Ploceusfile: %s' % ploceus_filename)
         print('task_name: %s' % options.task_name)
@@ -124,7 +135,8 @@ class Ploceus(object):
             sleep=options.sleep,
             parallel=options.parallel,
             ssh_pwd=options.password,
-            extra_vars=extra_vars
+            extra_vars=extra_vars,
+            **kwargs
         )
 
 
