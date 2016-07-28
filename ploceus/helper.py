@@ -5,7 +5,7 @@ import os
 import fcntl
 
 
-from ploceus.colors import blue, green, red
+from ploceus.colors import cyan, green, red
 from ploceus.exceptions import LocalCommandError, RemoteCommandError
 from ploceus.runtime import context_manager, env
 from ploceus.logger import log, logger
@@ -176,26 +176,29 @@ def run_in_child(cmd):
                 break
 
 
-def run(command, quiet=False, _raise=True, *args, **kwargs):
+def run(command, quiet=False, _raise=True,
+        silence=False, *args, **kwargs):
     # TODO: global sudo
 
     context = context_manager.get_context()
 
     if context.get('local_mode'):
-        return local(command, quiet, _raise)
+        return local(command, quiet, _raise, silence)
     else:
-        _, stdout, stderr, rc = _run_command(command, quiet, _raise)
+        _, stdout, stderr, rc = _run_command(
+            command, quiet, _raise, silence)
         return CommandResult(stdout, stderr, rc)
 
 
-def sudo(command, quiet=False, _raise=True, sudo_user=None):
+def sudo(command, quiet=False, _raise=True,
+         sudo_user=None, silence=False):
     sudo_user = sudo_user or 'root'
 
     command = 'sudo -u %s -H -i %s' % (sudo_user, command)
-    return run(command, quiet, _raise)
+    return run(command, quiet, _raise, silence)
 
 
-def local(command, quiet=False, _raise=True):
+def local(command, quiet=False, _raise=True, silence=False):
 
     context = context_manager.get_context()
 
@@ -203,8 +206,9 @@ def local(command, quiet=False, _raise=True):
     if context.get('cwd'):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
-    _ = '[%s] %s: %s' % (green('local'), blue('run'), wrapped_command)
-    logger.info(_)
+    if not silence:
+        _ = '[%s] %s: %s' % (green('local'), cyan('run'), wrapped_command)
+        logger.info(_)
 
     cwd = context.get('cwd')
     if cwd:
@@ -240,7 +244,7 @@ def local(command, quiet=False, _raise=True):
     return CommandResult(stdout, stderr, exitvalue)
 
 
-def _run_command(command, quiet=False, _raise=True):
+def _run_command(command, quiet=False, _raise=True, silence=False):
     context = context_manager.get_context()
     client = context['sshclient']
     hostname = context['host_string']
@@ -250,8 +254,9 @@ def _run_command(command, quiet=False, _raise=True):
     if context.get('cwd'):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
+    if not silence:
+        log(wrapped_command, prefix=cyan('run'))
     stdin, stdout, stderr, rc = client.exec_command(wrapped_command)
-    log(wrapped_command, prefix='run')
 
     stdout = stdout.read().decode(env.encoding)
     stderr = stderr.read().decode(env.encoding)
