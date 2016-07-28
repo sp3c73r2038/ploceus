@@ -24,8 +24,7 @@ def log(message, prefix=''):
         hostname = 'local'
     else:
         context = context_manager.get_context()
-        hostname = context['host_string']
-
+        hostname = context.get('host_string', '')
 
     _ = '[%s] %s: %s' % (green(hostname), prefix, message)
     logger.info(_)

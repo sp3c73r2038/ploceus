@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ploceus.colors import blue
+from ploceus.colors import cyan
 from ploceus.logger import log
 from ploceus.tools import deb
 from ploceus.tools import files
@@ -8,7 +8,7 @@ from ploceus.tools import system
 
 
 def package(pkg, update=None, version=None):
-    log('install %s' % pkg, prefix=blue('deb'))
+    log('install %s' % pkg, prefix=cyan('deb'))
     if deb.is_installed(pkg):
         return
 
@@ -27,15 +27,15 @@ APT::Update::Post-Invoke-Success {"touch /var/lib/apt/periodic/ploceus-update-su
                       """)
 
     if system.time() - deb.last_update_time() > max_age:
-        log('updateing apt index', prefix=blue('deb'))
+        log('updateing apt index', prefix=cyan('deb'))
         deb.update_index(quiet=quiet)
-    log('apt index updated', prefix=blue('deb'))
+    log('apt index updated', prefix=cyan('deb'))
 
 
 def key(key_id, url):
     if not deb.apt_key_exists(key_id):
         deb.add_apt_key(url)
-    log('added apt key "%s"' % key_id, prefix=blue('deb'))
+    log('added apt key "%s"' % key_id, prefix=cyan('deb'))
 
 
 def source(name, uri, distribution, *components, **kwargs)    :
@@ -47,4 +47,4 @@ def source(name, uri, distribution, *components, **kwargs)    :
 
     contents = 'deb %s %s %s %s\n' % (arch, uri, distribution, components)
     files.upload_file(path, contents=contents)
-    log('added apt repo "%s"' % name, prefix=blue('deb'))
+    log('added apt repo "%s"' % name, prefix=cyan('deb'))

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ploceus.colors import blue
+from ploceus.colors import cyan
 from ploceus.logger import log
 from ploceus.tools import files
 from ploceus.tools import network
@@ -9,7 +9,7 @@ from ploceus.tools import network
 def get_url(url, path, user=None, grp=None, mode=None,
             sha1sum=None, use_sudo=False):
 
-    log('%s -> %s' % (url, path), prefix=blue('network'))
+    log('%s -> %s' % (url, path), prefix=cyan('network'))
 
     if sha1sum and files.is_file(path):
         if sha1sum.lower() == files.sha1sum(path):

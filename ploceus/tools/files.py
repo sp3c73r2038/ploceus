@@ -5,7 +5,7 @@ from tempfile import mkstemp
 
 import jinja2
 
-from ploceus.colors import blue
+from ploceus.colors import cyan
 from ploceus.helper import run, sudo
 from ploceus.logger import log
 from ploceus.runtime import context_manager, env
@@ -19,49 +19,50 @@ def _jinja_make_globals(t):
 def is_file(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     return _('test -f %s' % path,
-             quiet=True,
+             quiet=True, silence=True,
              sudo_user=sudo_user, _raise=False).succeeded
 
 
 def is_dir(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     return _('test -d %s' % path,
-             quiet=True,
+             quiet=True, silence=True,
              sudo_user=sudo_user, _raise=False).succeeded
 
 
 def is_symlink(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     return _('test -L %s' % path,
-             quiet=True,
+             quiet=True, silence=True,
              sudo_user=sudo_user, _raise=False).succeeded
 
 
 def owner(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%U %s' % path,
-            quiet=True, sudo_user=sudo_user).stdout.strip()
+            quiet=True, silence=True, sudo_user=sudo_user).stdout.strip()
     return rv
 
 
 def group(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%G %s' % path,
-           quiet=True, sudo_user=sudo_user).stdout.strip()
+           quiet=True, silence=True, sudo_user=sudo_user).stdout.strip()
     return rv
 
 
 def mode(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
     rv = _('stat -c %%a %s' % path,
-           quiet=True, sudo_user=sudo_user).stdout.strip()
+           quiet=True, silence=True, sudo_user=sudo_user).stdout.strip()
     return '0' + rv
 _mode = mode
 
 
 def umask(path, use_sudo=None, sudo_user=None):
     _ = (use_sudo and sudo) or run
-    rv = _('umask', quiet=True, sudo_user=sudo_user).stdout.strip()
+    rv = _('umask', quiet=True,
+           silence=True, sudo_user=sudo_user).stdout.strip()
     return rv
 
 
@@ -79,7 +80,8 @@ def chown(path, user, grp, recursive=False,
 
 def getmtime(path, use_sudo=True):
     _ = (use_sudo and sudo) or run
-    return int(_('stat -c %%Y %s' % path, quiet=True).stdout.strip())
+    return int(_('stat -c %%Y %s' % path,
+                 quiet=True, silence=True).stdout.strip())
 
 
 def chmod(path, mode, recursive=False,
@@ -118,7 +120,8 @@ def symlink(src, dest, user=None, grp=None,
 
 def upload_file(dest, src=None, contents=None,
                 user=None, grp=None, mode=None,
-                use_sudo=False, quiet=False, temp_dir="/tmp/"):
+                use_sudo=False, quiet=False, silence=False,
+                temp_dir="/tmp/"):
     context = context_manager.get_context()
     ssh = context['sshclient']
 
@@ -135,7 +138,7 @@ def upload_file(dest, src=None, contents=None,
         t.close()
 
     if quiet is False:
-        log('file: %s -> %s' % (localpath, dest), prefix=blue('upload'))
+        log('file: %s -> %s' % (localpath, dest), prefix=cyan('upload'))
 
 
     origin_dest = dest
@@ -157,7 +160,7 @@ def upload_file(dest, src=None, contents=None,
         chmod(dest, mode, use_sudo=use_sudo)
 
     if use_sudo:
-        sudo('mv %s %s' % (dest, origin_dest), quiet=True)
+        sudo('mv %s %s' % (dest, origin_dest), quiet=True, silence=True)
 
 
 def upload_template(dest, template=None, contents=None,
@@ -180,7 +183,8 @@ def upload_template(dest, template=None, contents=None,
 
     if template is not None:
         assert contents is None
-        log('template: %s -> %s' % (template, dest), prefix=blue('upload'))
+        log('template: %s -> %s' % (template, dest),
+            prefix=cyan('upload'))
         with open(template) as f:
             t = jinja2.Template(f.read(), keep_trailing_newline=True)
             _jinja_make_globals(t)
@@ -194,10 +198,11 @@ def upload_template(dest, template=None, contents=None,
         t.write(contents)
         t.close()
         if _template is None:
-            log('template: %s -> %s' % (localpath, dest), prefix=blue('upload'))
+            log('template: %s -> %s' % (localpath, dest),
+                prefix=cyan('upload'))
 
     upload_file(dest, src=localpath, user=user, grp=grp,
-                mode=mode, quiet=True, use_sudo=use_sudo)
+                mode=mode, quiet=True, silence=True, use_sudo=use_sudo)
 
     if _template:
         os.unlink(localpath)
@@ -205,9 +210,11 @@ def upload_template(dest, template=None, contents=None,
 
 def md5sum(path, use_sudo=False):
     _ = (use_sudo and sudo) or run
-    return _('md5sum %s' % path, quiet=True).stdout.strip().split()[0].lower()
+    return _('md5sum %s' % path,
+             quiet=True, silence=True).stdout.strip().split()[0].lower()
 
 
 def sha1sum(path, use_sudo=False):
     _ = (use_sudo and sudo) or run
-    return _('sha1sum %s' % path, quiet=True).stdout.strip().split()[0].lower()
+    return _('sha1sum %s' % path,
+             quiet=True, silence=True).stdout.strip().split()[0].lower()
