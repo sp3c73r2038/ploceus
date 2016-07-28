@@ -14,7 +14,6 @@ __all__ = ['run', 'sudo']
 
 
 
-
 class CommandResult(object):
 
     def __init__(self, stdout, stderr, exitvalue):
@@ -204,9 +203,8 @@ def local(command, quiet=False, _raise=True):
     if context.get('cwd'):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
-    if quiet is False:
-        _ = '[%s] %s: %s' % (green('local'), blue('run'), wrapped_command)
-        logger.info(_)
+    _ = '[%s] %s: %s' % (green('local'), blue('run'), wrapped_command)
+    logger.info(_)
 
     cwd = context.get('cwd')
     if cwd:
@@ -219,14 +217,14 @@ def local(command, quiet=False, _raise=True):
         if outline:
             line = outline.decode(env.encoding).strip()
             stdout.append(line)
-            if not quiet:
+            if not quiet and not env.keep_quiet:
                 _ = '[%s] %s: %s' %\
                     (green('local'), 'stdout', line.strip())
                 logger.info(_)
         if errline:
             line = errline.decode(env.encoding).strip()
             stderr.append(line)
-            if not quiet:
+            if not quiet and not env.keep_quiet:
                 _ = '[%s] %s: %s' %\
                     (green('local'), red('stderr'), line.strip())
                 logger.error(_)
@@ -253,14 +251,13 @@ def _run_command(command, quiet=False, _raise=True):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
     stdin, stdout, stderr, rc = client.exec_command(wrapped_command)
-    if quiet is False:
-        log(wrapped_command, prefix='run')
+    log(wrapped_command, prefix='run')
 
     stdout = stdout.read().decode(env.encoding)
     stderr = stderr.read().decode(env.encoding)
 
     if rc != 0:
-        if quiet is False:
+        if quiet is False and not env.keep_quiet:
             for line in stderr.split('\n'):
                 log(line.strip(), prefix=red('stderr'))
 
@@ -268,7 +265,7 @@ def _run_command(command, quiet=False, _raise=True):
             raise RemoteCommandError(
                 'stdout: %s\n\nstderr: %s' % (stdout, stderr))
 
-    if quiet is False:
+    if quiet is False and not env.keep_quiet:
         for line in stdout.split('\n'):
                 log(line.strip(), prefix='stdout')
 

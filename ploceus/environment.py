@@ -8,3 +8,4 @@ class Environment(object):
     local_mode = False
     ssh_timeout = 5
     break_on_error = True
+    keep_quiet = False

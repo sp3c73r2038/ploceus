@@ -5,9 +5,9 @@ import sys
 from ploceus import g
 from ploceus import ploceusfile
 from ploceus.exceptions import ArgumentError
-from ploceus.inventory import Inventory
 from ploceus.executor import run_task
-
+from ploceus.inventory import Inventory
+from ploceus.runtime import env
 
 class Ploceus(object):
 
@@ -55,6 +55,10 @@ class Ploceus(object):
         )
         ap.add_argument(
             '-p', '--password', help='use password to connect'
+        )
+        ap.add_argument(
+            '-q', '--quiet', help='quiet mode, suppress command output',
+            action='store_true'
         )
         ap.add_argument(
             '--args', help='arguments passing to task',
@@ -123,10 +127,14 @@ class Ploceus(object):
                 k, v = i.split(':', 1)
                 kwargs[k] = v
 
+        if options.quiet:
+            env.keep_quiet = True
+
         # TODO project level logger
         print('Ploceusfile: %s' % ploceus_filename)
         print('task_name: %s' % options.task_name)
         print('host: %s' % hosts)
+        print('keep_quiet: %s' % options.quiet)
 
         run_task(
             task, hosts,
