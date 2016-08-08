@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ploceus.context import cd, local_mode
+from ploceus.context import cd
 from ploceus.decorator import task
 from ploceus.helper import local, run, sudo
 from ploceus.runtime import env, context_manager

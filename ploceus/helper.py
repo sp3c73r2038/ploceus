@@ -182,12 +182,9 @@ def run(command, quiet=False, _raise=True,
 
     context = context_manager.get_context()
 
-    if context.get('local_mode'):
-        return local(command, quiet, _raise, silence)
-    else:
-        _, stdout, stderr, rc = _run_command(
-            command, quiet, _raise, silence)
-        return CommandResult(stdout, stderr, rc)
+    _, stdout, stderr, rc = _run_command(
+        command, quiet, _raise, silence)
+    return CommandResult(stdout, stderr, rc)
 
 
 def sudo(command, quiet=False, _raise=True,
