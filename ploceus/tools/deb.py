@@ -15,7 +15,8 @@ def update_index(quiet=True):
 
 
 def is_installed(pkg):
-    if run('dpkg -s %s' % pkg, quiet=True, _raise=False).failed:
+    if run('dpkg -s %s' % pkg,
+           quiet=True, _raise=False, silence=True).failed:
         return False
     return True
 
