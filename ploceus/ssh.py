@@ -96,7 +96,10 @@ class SSHClient(object):
             self._auth_by_password(username, password)
 
         if not self._transport.is_authenticated():
-            raise RuntimeError('cannot authenticate')
+            raise RuntimeError(
+                ('cannot authenticate when '
+                 'connecting to %s@%s') % \
+                (username, hostname))
 
         return username
 
