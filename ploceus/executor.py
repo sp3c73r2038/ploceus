@@ -108,7 +108,8 @@ def run_task(tasks, hosts,
             runner.append_ssh_client(client)
 
             # ansible like host_vars
-            context['extra_vars'].update(
+            extra_vars = extra_vars or {}
+            extra_vars.update(
                 g.inventory.get_target_host(hostname))
 
             rv[hostname] = task.run(extra_vars=extra_vars, **kwargs)
