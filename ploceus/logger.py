@@ -3,9 +3,6 @@ import logging
 import sys
 
 from ploceus.colors import green
-from ploceus.runtime import context_manager
-
-
 
 logger = logging.getLogger('ploceus')
 del logger.handlers[:]

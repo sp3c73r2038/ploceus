@@ -8,3 +8,6 @@ class Environment(object):
     ssh_timeout = 5
     break_on_error = True
     keep_quiet = False
+
+    # default to current working directory
+    template_path = ''

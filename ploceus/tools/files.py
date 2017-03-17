@@ -185,7 +185,9 @@ def upload_template(dest, template=None, contents=None,
         assert contents is None
         log('template: %s -> %s' % (template, dest),
             prefix=cyan('upload'))
-        with open(template) as f:
+        tpl_path = os.path.join(os.path.abspath(env.template_path),
+                                template)
+        with open(tpl_path) as f:
             t = jinja2.Template(f.read(), keep_trailing_newline=True)
             _jinja_make_globals(t)
             contents = t.render(**jinja_ctx)
