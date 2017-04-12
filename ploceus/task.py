@@ -59,7 +59,15 @@ class Task(object):
     def __init__(self, func, ssh_user=None):
         """create a ``Task'' object, register it to global store
         """
-        self.func = func
+        def new_func(*_args, **_kwargs):
+            rv = func(*_args, **_kwargs)
+            return rv
+
+        new_func.__name__ = func.__name__
+        new_func.__module__ = func.__module__
+
+        self.wrapped = func
+        self.func = new_func
         self.ssh_user = ssh_user
 
         module = func.__module__
