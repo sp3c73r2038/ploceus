@@ -243,7 +243,7 @@ def local(command, quiet=False, _raise=True, silence=False):
 
 def _run_command(command, quiet=False, _raise=True, silence=False):
     context = context_manager.get_context()
-    client = context['sshclient']
+    client = context.get_client()
     hostname = context['host_string']
 
     wrapped_command = command
