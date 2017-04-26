@@ -4,8 +4,27 @@ import os
 
 from ploceus.utils._collections import ThreadLocalRegistry
 
+class Context(dict):
 
-class Context(dict): pass
+    sshclient = None
+    connected = False
+
+    def get_client(self):
+        if not connected:
+
+            username = self['username']
+            hostname = self['host_string']
+            password = self['password']
+
+            username = self.sshclient.connect(
+                hostname,
+                username=username,
+                password=password)
+
+            self['username'] = username
+
+            connected = True
+        return self.sshclient
 
 
 def new_context():

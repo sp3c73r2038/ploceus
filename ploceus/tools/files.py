@@ -124,7 +124,7 @@ def upload_file(dest, src=None, contents=None,
                 use_sudo=False, quiet=False, silence=False,
                 temp_dir="/tmp/"):
     context = context_manager.get_context()
-    ssh = context['sshclient']
+    ssh = context.get_client()
 
     if src:
         assert contents is None
@@ -170,7 +170,7 @@ def upload_template(dest, template=None, contents=None,
                     jinja_ctx=None, user=None, grp=None, mode=None,
                     use_sudo=False):
     context = context_manager.get_context()
-    ssh = context['sshclient']
+    ssh = context.get_client()
 
     jinja_ctx = jinja_ctx or {}
     if 'extra_vars' in context and context['extra_vars']:

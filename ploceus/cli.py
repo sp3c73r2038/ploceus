@@ -111,10 +111,6 @@ class Ploceus(object):
                 'Specify a task to run, please. '
                 'You can use -l to list tasks.')
 
-        if len(hosts) == 0:
-            raise ArgumentError(
-                'no hosts specified.')
-
         task = g.tasks.get(options.task_name)
         if task is None:
             print('\n\tunknown task: %s\n' % options.task_name)

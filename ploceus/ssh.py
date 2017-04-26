@@ -126,6 +126,7 @@ class SSHClient(object):
 
 
     def close(self):
-        self._transport.close()
+        if self._transport:
+            self._transport.close()
         if self._sftp:
             self._sftp.close()

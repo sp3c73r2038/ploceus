@@ -139,3 +139,6 @@ class Task(object):
                 f(context)
 
         return rv
+
+    def __call__(self, **kwargs):
+        return self.func(**kwargs)

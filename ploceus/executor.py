@@ -7,7 +7,6 @@ from ploceus.inventory import Inventory
 from ploceus.runtime import context_manager
 from ploceus.ssh import SSHClient
 
-
 def group_task(tasks, group, inventory=None,
                sleep=None, parallel=None,
                ssh_user=None, ssh_pwd=None,
@@ -87,7 +86,6 @@ def run_task(tasks, hosts,
             context = context_manager.get_context()
             hostname = host
             # connect to remote host
-            client = SSHClient()
 
             if not username:
                 username = task.ssh_user
@@ -97,15 +95,14 @@ def run_task(tasks, hosts,
                 if not username:
                     username = _
 
-            username = client.connect(
-                hostname, username=username,
-                password=password)
-
             # setting context
-            context['sshclient'] = client
-            context['host_string'] = hostname
+            context['password'] = password
             context['username'] = username
+            context['host_string'] = hostname
+
+            client = SSHClient()
             runner.append_ssh_client(client)
+            context.sshclient = client
 
             # ansible like host_vars
             extra_vars = extra_vars or {}
