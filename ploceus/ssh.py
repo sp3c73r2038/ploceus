@@ -10,6 +10,7 @@ from ploceus.runtime import env
 class SSHClient(object):
 
     def __init__(self):
+        self._connected = False
         self._transport = None
         self._sftp = None
         self._sshconfig = paramiko.SSHConfig()
@@ -101,6 +102,7 @@ class SSHClient(object):
                  'connecting to %s@%s') % \
                 (username, hostname))
 
+        self._connected = True
         return username
 
 

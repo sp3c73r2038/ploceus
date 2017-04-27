@@ -6,11 +6,12 @@ from ploceus.utils._collections import ThreadLocalRegistry
 
 class Context(dict):
 
-    sshclient = None
-    connected = False
+    def __init__(self):
+        self.sshclient = None
 
     def get_client(self):
-        if not self.connected:
+
+        if not self.sshclient._connected:
 
             username = self['username']
             hostname = self['host_string']
@@ -23,7 +24,6 @@ class Context(dict):
 
             self['username'] = username
 
-            self.connected = True
         return self.sshclient
 
 
