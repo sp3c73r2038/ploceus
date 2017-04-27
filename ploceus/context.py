@@ -10,7 +10,7 @@ class Context(dict):
     connected = False
 
     def get_client(self):
-        if not connected:
+        if not self.connected:
 
             username = self['username']
             hostname = self['host_string']
@@ -23,7 +23,7 @@ class Context(dict):
 
             self['username'] = username
 
-            connected = True
+            self.connected = True
         return self.sshclient
 
 
