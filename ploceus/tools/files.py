@@ -178,7 +178,7 @@ def upload_template(dest, template=None, contents=None,
 
 
     _ctx = context.copy()
-    _ctx.pop('sshclient')
+    # _ctx.pop('sshclient')
 
     jinja_ctx['context'] = _ctx
 
