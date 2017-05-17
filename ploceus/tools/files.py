@@ -115,7 +115,7 @@ def symlink(src, dest, user=None, grp=None,
     if force:
         _force = 'f'
     cmd = 'ln -sn%s %s %s' % (_force, src, dest)
-    _('mkdir -p %s' % path, sudo_user=sudo_user)
+    _(cmd, sudo_user=sudo_user)
 
 
 

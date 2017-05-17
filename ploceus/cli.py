@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
+import logging
 import sys
 
 from ploceus import g
@@ -7,6 +8,7 @@ from ploceus import ploceusfile
 from ploceus.exceptions import ArgumentError
 from ploceus.executor import run_task
 from ploceus.inventory import Inventory
+from ploceus.logger import logger
 from ploceus.runtime import env
 
 class Ploceus(object):
@@ -61,6 +63,10 @@ class Ploceus(object):
             action='store_true'
         )
         ap.add_argument(
+            '--debug', help='set logging level to debug',
+            action='store_true'
+        )
+        ap.add_argument(
             '--args', help='arguments passing to task',
             action='append', default=[],
         )
@@ -70,6 +76,11 @@ class Ploceus(object):
 
         options = ap.parse_args()
         # print(options)
+
+        if options.debug:
+            logger.setLevel(logging.DEBUG)
+            for h in logger.handlers:
+                h.setLevel(logging.DEBUG)
 
         ploceus_filename = options.ploceus_file
         if options.ploceus_file is None:
