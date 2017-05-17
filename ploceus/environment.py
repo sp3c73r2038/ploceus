@@ -11,3 +11,6 @@ class Environment(object):
 
     # default to current working directory
     template_path = ''
+
+    # ssh connecting gateway
+    gateway_settings = {}

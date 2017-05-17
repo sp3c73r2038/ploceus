@@ -39,7 +39,7 @@ class Inventory(object):
                 map(lambda x: os.path.join(inventory, x),
                     os.listdir(inventory)))
         else:
-            raise ValueError('not a valid invetory file: %s' % invetory)
+            raise ValueError('not a valid invetory file: %s' % inventory)
 
         for fname in file_names:
             self._groups.update(self._parse_inventory(fname))

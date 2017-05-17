@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 import os
 
+
 from ploceus.utils._collections import ThreadLocalRegistry
 
 class Context(dict):
@@ -17,10 +18,14 @@ class Context(dict):
             hostname = self['host_string']
             password = self['password']
 
+            from ploceus.runtime import env
+            gateway = env.gateway_settings.get(hostname)
+
             username = self.sshclient.connect(
                 hostname,
                 username=username,
-                password=password)
+                password=password,
+                gateway=gateway)
 
             self['username'] = username
 

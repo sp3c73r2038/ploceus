@@ -136,17 +136,9 @@ def run_in_child(cmd):
 
             try:
                 _pid, exitvalue = os.waitpid(-1, os.WNOHANG)
-            except Exception as e:
-                try:
-                    if type(e) == ChildProcessError:
-                        break
-                    else:
-                        raise
-                except NameError:
-                    if e.errno == errno.ECHILD:
-                        break
-                    else:
-                        raise
+            except OSError as e:
+                if e.errno == errno.ECHILD:
+                    break
 
         outline = b''
         while True:

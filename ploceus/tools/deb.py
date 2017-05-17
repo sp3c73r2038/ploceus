@@ -48,8 +48,8 @@ def uninstall(packages, purge=False, options=None):
     if not isinstance(packages, str):
         packages = ' '.join(packages)
     options.append('--assume-yes')
-    options = ' '.join(optioins)
-    cmd = '%s %s %s %s' % (MANAGER, command, options, packages)
+    options = ' '.join(options)
+    cmd = '%s %s %s %s' % (MANAGER, action, options, packages)
     sudo(cmd)
 
 

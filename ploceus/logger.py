@@ -4,13 +4,22 @@ import sys
 
 from ploceus.colors import green
 
-logger = logging.getLogger('ploceus')
+logger = logging.getLogger('ploceus.helper')
 del logger.handlers[:]
 hdl = logging.StreamHandler(sys.stderr)
 hdl.setLevel(logging.INFO)
 logger.addHandler(hdl)
 logger.setLevel(logging.INFO)
+logger.propagate = False
 
+logger = logging.getLogger('ploceus.general')
+del logger.handlers[:]
+hdl = logging.StreamHandler(sys.stderr)
+hdl.setLevel(logging.INFO)
+hdl.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
+logger.addHandler(hdl)
+logger.setLevel(logging.INFO)
+logger.propagate = False
 
 def log(message, prefix=''):
     from ploceus.runtime import context_manager
@@ -19,4 +28,5 @@ def log(message, prefix=''):
     hostname = context.get('host_string', '')
 
     _ = '[%s] %s: %s' % (green(hostname), prefix, message)
-    logger.info(_)
+    _logger = logging.getLogger('ploceus.helper')
+    _logger.info(_)
