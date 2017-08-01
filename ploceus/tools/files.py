@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import hashlib
 import os
+from pathlib import Path
 from tempfile import mkstemp
 
 import jinja2
@@ -140,6 +141,8 @@ def upload_file(dest, src=None, contents=None,
     if quiet is False:
         log('file: %s -> %s' % (localpath, dest), prefix=cyan('upload'))
 
+    if not Path(localpath).is_file():
+        localpath = os.path.join(env.template_path, localpath)
 
     origin_dest = dest
     if use_sudo:
