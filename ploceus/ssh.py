@@ -76,6 +76,8 @@ class SSHClient(object):
 
         sock.settimeout(env.ssh_timeout)
 
+        logger.debug('connecting to %s:%s' % (hostname, port))
+
         sock.connect((hostname, port))
         self._transport = paramiko.transport.Transport(sock)
         self._transport.start_client()
@@ -177,7 +179,7 @@ class SSHClient(object):
 
 
     def connect(self, hostname, username=None,
-                password=None, port=22, gateway=None):
+                password=None, port=None, gateway=None):
 
         hostConfig = self._sshconfig.lookup(hostname)
         hostname = hostConfig['hostname']
@@ -188,6 +190,8 @@ class SSHClient(object):
         port = port or int(hostConfig.get('port', 22))
 
         if gateway:
+            logger.debug(gateway)
+
             return self.connectUsingGateway(
                 gateway=gateway,
                 hostname=hostname,
