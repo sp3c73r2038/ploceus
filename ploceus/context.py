@@ -37,15 +37,16 @@ def new_context():
     rv['extra_vars'] = {}
     return rv
 
+
 # TODO: scope
 class ContextManager(object):
 
     def __init__(self):
         self.context = ThreadLocalRegistry(new_context)
 
-
     def get_context(self):
         return self.context()
+
 
 def cd(path):
 
@@ -71,8 +72,16 @@ def _setenv(name, value):
 
     previous = context.get(name)
     context[name] = value
-    yield
+    err = None
+    try:
+        yield
+    except Exception as e:
+        err = e
+
     if previous:
         context[name] = previous
-        return
-    context[name] = None
+    else:
+        context[name] = None
+
+    if err is not None:
+        raise err
