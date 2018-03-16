@@ -7,7 +7,7 @@ setup(
     version='0.0.1',
     install_requires=[
         'pycrypto==2.4.1',
-        'paramiko',
+        'paramiko>=2.3',
         'PyYAML',
         'Jinja2'
     ],
