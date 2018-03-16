@@ -34,9 +34,9 @@ class SSHClient(object):
         pkey_fns = {'id_rsa', 'id_ed25519'}
         pkey_paths = []
         for f in pkey_fns:
-            path = os.path.oxpanduser('~/.ssh/%s' % f)
+            path = os.path.expanduser('~/.ssh/%s' % f)
             if os.path.isfile(path):
-                pkey_paths.add(path)
+                pkey_paths.append(path)
 
         return pkey_paths
 
