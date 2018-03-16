@@ -34,7 +34,12 @@ class SSHClient(object):
     def _auto_auth(self, transport, username, identities):
         for identity in identities:
             try:
-                key = paramiko.RSAKey.from_private_key_file(identity)
+                if 'id_ed25519' in identity:
+                    _cls = paramiko.Ed25519Key
+                else:
+                    _cls = paramiko.RSAKey
+
+                key = _cls.from_private_key_file(identity)
                 transport.auth_publickey(username, key)
                 if transport.is_authenticated():
                     return
@@ -138,7 +143,10 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = [os.path.expanduser('~/.ssh/id_rsa')]
+                identity = [
+                    os.path.expanduser('~/.ssh/id_rsa'),
+                    os.path.expanduser('~/.ssh/id_ed25519')
+                ]
             self._auto_auth(self._gwTransport, gwUser, identity)
         else:
             self._auth_by_password(self._gwTransport, gwUser, password)
