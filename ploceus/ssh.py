@@ -94,7 +94,10 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = [os.path.expanduser('~/.ssh/id_rsa')]
+                identity = [
+                    os.path.expanduser('~/.ssh/id_rsa'),
+                    os.path.expanduser('~/.ssh/id_ed25519')
+                ]
             self._auto_auth(self._transport, username, identity)
         else:
             self._auth_by_password(self._transport, username, password)
@@ -171,7 +174,10 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = [os.path.expanduser('~/.ssh/id_rsa')]
+                identity = [
+                    os.path.expanduser('~/.ssh/id_rsa'),
+                    os.path.expanduser('~/.ssh/id_ed25519')
+                ]
             self._auto_auth(self._transport, username, identity)
         else:
             self._auth_by_password(self._transport, username, password)
