@@ -27,6 +27,6 @@ def reload(service):
 
 
 def _service(service, action):
-    rv = sudo('service %s %s' % (service, action),
+    rv = sudo('SYSTEMD_PAGER= service %s %s' % (service, action),
               quiet=True, _raise=False, silence=True)
     return rv
