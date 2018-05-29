@@ -30,6 +30,15 @@ class SSHClient(object):
         with open(fn) as f:
             self._sshconfig.parse(f)
 
+    def _get_local_pkey_paths(self):
+        pkey_fns = {'id_rsa', 'id_ed25519'}
+        pkey_paths = []
+        for f in pkey_fns:
+            path = os.path.expanduser('~/.ssh/%s' % f)
+            if os.path.isfile(path):
+                pkey_paths.append(path)
+
+        return pkey_paths
 
     def _auto_auth(self, transport, username, identities):
         for identity in identities:
@@ -94,10 +103,7 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = [
-                    os.path.expanduser('~/.ssh/id_rsa'),
-                    os.path.expanduser('~/.ssh/id_ed25519')
-                ]
+                identity = self._get_local_pkey_paths()
             self._auto_auth(self._transport, username, identity)
         else:
             self._auth_by_password(self._transport, username, password)
@@ -146,10 +152,7 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = [
-                    os.path.expanduser('~/.ssh/id_rsa'),
-                    os.path.expanduser('~/.ssh/id_ed25519')
-                ]
+                identity = self._get_local_pkey_paths()
             self._auto_auth(self._gwTransport, gwUser, identity)
         else:
             self._auth_by_password(self._gwTransport, gwUser, password)
@@ -174,10 +177,7 @@ class SSHClient(object):
             if 'identityfile' in host_sshconfig:
                 identity = host_sshconfig['identityfile']
             else:
-                identity = [
-                    os.path.expanduser('~/.ssh/id_rsa'),
-                    os.path.expanduser('~/.ssh/id_ed25519')
-                ]
+                identity = self._get_local_pkey_paths()
             self._auto_auth(self._transport, username, identity)
         else:
             self._auth_by_password(self._transport, username, password)
