@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+
 class Environment(object):
+
     pre_task_hooks = []
     post_task_hooks = []
-    encoding='utf-8'
+    encoding = 'utf-8'
     cwd = None
     ssh_timeout = 5
     break_on_error = True
@@ -14,3 +16,13 @@ class Environment(object):
 
     # ssh connecting gateway
     gateway_settings = {}
+
+    # global setting ssh private keys
+    # element structure:
+    # (${keyType}, ${path}, ${passphrase})
+    # example:
+    # no passphrase
+    # ('rsa', '~/.ssh/some/id_rsa', '')
+    # with passphrase
+    # ('ed25519', '~/.ssh/another/id_ed25519', 'somepass')
+    ssh_pkeys = []

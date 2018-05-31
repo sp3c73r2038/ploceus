@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import binascii
 import getpass
 import logging
-import os
+from os.path import expanduser, isfile
 import socket
 
 import paramiko
@@ -9,6 +10,7 @@ import paramiko
 from ploceus.runtime import env
 
 logger = logging.getLogger('ploceus.general')
+
 
 class SSHClient(object):
 
@@ -21,10 +23,9 @@ class SSHClient(object):
 
         self._read_ssh_config()
 
-
     def _read_ssh_config(self):
-        fn = os.path.expanduser('~/.ssh/config')
-        if not os.path.isfile(fn):
+        fn = expanduser('~/.ssh/config')
+        if not isfile(fn):
             return
 
         with open(fn) as f:
@@ -34,43 +35,103 @@ class SSHClient(object):
         pkey_fns = {'id_rsa', 'id_ed25519'}
         pkey_paths = []
         for f in pkey_fns:
-            path = os.path.expanduser('~/.ssh/%s' % f)
-            if os.path.isfile(path):
+            path = expanduser('~/.ssh/%s' % f)
+            if isfile(path):
                 pkey_paths.append(path)
 
         return pkey_paths
 
-    def _auto_auth(self, transport, username, identities):
-        for identity in identities:
-            try:
-                if 'id_ed25519' in identity:
-                    _cls = paramiko.Ed25519Key
-                else:
-                    _cls = paramiko.RSAKey
+    def _auto_auth(self, transport, username, config):
+        # 0x0 IdentifyFile in ssh_config
+        if 'identityfile' in config:
+            idents = config['identityfile']
+            for ident in idents:
+                logger.debug('ident: {}'.format(ident))
+                cls = paramiko.rsakey.RSAKey
+                if ident.lower() == 'rsa':
+                    cls = paramiko.rsakey.RSAKey
+                elif ident.lower() == 'dsa':
+                    cls = paramiko.dsskey.DSSKey
+                elif ident.lower() == 'ed25519':
+                    cls = paramiko.ed25519key.Ed25519Key
+                key = cls.from_private_key_file(ident)
+                if self._auth_by_key(transport, username, key):
+                    return
 
-                key = _cls.from_private_key_file(identity)
-                transport.auth_publickey(username, key)
-                if transport.is_authenticated():
+        # 0x1 env.ssh_pkeys
+        if env.ssh_pkeys:
+            for ktype, path, passphrase in env.ssh_pkeys:
+                path = expanduser(path)
+                if ktype.lower() == 'rsa':
+                    cls = paramiko.rsakey.RSAKey
+                elif ktype.lower() == 'dsa':
+                    cls = paramiko.dsskey.DSSKey
+                elif ktype.lower() == 'ed25519':
+                    cls = paramiko.ed25519key.Ed25519Key
+                else:
+                    msg = 'unsupported keytype {}'.format(ktype)
+                    raise ValueError(msg)
+                key = cls.from_private_key_file(path, passphrase)
+                if self._auth_by_key(transport, username, key):
+                    return
+
+        # 0x2 agent keys
+        agent = paramiko.Agent()
+        for key in agent.get_keys():
+            if self._auth_by_key(transport, username, key):
+                return
+
+        # 0x3 frequently used keys
+        # id_rsa
+        path = expanduser('~/.ssh/id_rsa')
+        if isfile(path):
+            try:
+                key = paramiko.rsakey.RSAKey.from_private_key_file(path)
+                if self._auth_by_key(transport, username, key):
                     return
             except paramiko.ssh_exception.PasswordRequiredException:
-                continue
-            except paramiko.ssh_exception.AuthenticationException:
-                continue
+                pass
 
-        agent = paramiko.Agent()
-        agent_keys = agent.get_keys()
-        for key in agent_keys:
+        # id_dsa
+        path = expanduser('~/.ssh/id_dsa')
+        if isfile(path):
             try:
-                transport.auth_publickey(username, key)
-                if transport.is_authenticated():
+                key = paramiko.dsskey.DSSKey.from_private_key_file(path)
+                if self._auth_by_key(transport, username, key):
                     return
-            except paramiko.ssh_exception.AuthenticationException:
-                continue
+            except paramiko.ssh_exception.PasswordRequiredException:
+                pass
 
+        # id_ed25519
+        path = expanduser('~/.ssh/id_ed25519')
+        if isfile(path):
+            try:
+                key = paramiko.ed25519key.Ed25519Key.from_private_key_file(
+                    path)
+                if self._auth_by_key(transport, username, key):
+                    return
+            except paramiko.ssh_exception.PasswordRequiredException:
+                pass
+
+        # maybe still not authenticated yet?
+
+    def _auth_by_key(self, transport, username, key):
+        """
+        return True if authenticated
+        """
+        rv = False
+        fp = binascii.hexlify(key.get_fingerprint())
+        logger.debug('auth using key: {}'.format(fp.decode()))
+        try:
+            transport.auth_publickey(username, key)
+            if transport.is_authenticated():
+                rv = True
+        except paramiko.ssh_exception.AuthenticationException:
+            pass
+        return rv
 
     def _auth_by_password(self, transport, username, password):
         transport.auth_password(username, password)
-
 
     @property
     def sftp(self):
@@ -99,12 +160,7 @@ class SSHClient(object):
         host_sshconfig = self._sshconfig.lookup(hostname)
 
         if password is None:
-            # TODO: DSA key
-            if 'identityfile' in host_sshconfig:
-                identity = host_sshconfig['identityfile']
-            else:
-                identity = self._get_local_pkey_paths()
-            self._auto_auth(self._transport, username, identity)
+            self._auto_auth(self._transport, username, host_sshconfig)
         else:
             self._auth_by_password(self._transport, username, password)
 
@@ -116,7 +172,6 @@ class SSHClient(object):
 
         self._connected = True
         return username
-
 
     def connectUsingGateway(self, gateway, hostname, username,
                             password, port):
@@ -148,12 +203,7 @@ class SSHClient(object):
         self._gwTransport.start_client()
 
         if password is None:
-            # TODO: DSA key
-            if 'identityfile' in host_sshconfig:
-                identity = host_sshconfig['identityfile']
-            else:
-                identity = self._get_local_pkey_paths()
-            self._auto_auth(self._gwTransport, gwUser, identity)
+            self._auto_auth(self._gwTransport, gwUser, host_sshconfig)
         else:
             self._auth_by_password(self._gwTransport, gwUser, password)
 
@@ -172,13 +222,10 @@ class SSHClient(object):
         self._transport = paramiko.transport.Transport(targetSock)
         self._transport.start_client()
 
+        # FIXME: pkeys via gateway?
+
         if password is None:
-            # TODO: DSA key
-            if 'identityfile' in host_sshconfig:
-                identity = host_sshconfig['identityfile']
-            else:
-                identity = self._get_local_pkey_paths()
-            self._auto_auth(self._transport, username, identity)
+            self._auto_auth(self._transport, username, host_sshconfig)
         else:
             self._auth_by_password(self._transport, username, password)
 
@@ -190,7 +237,6 @@ class SSHClient(object):
 
         self._connected = True
         return username
-
 
     def connect(self, hostname, username=None,
                 password=None, port=None, gateway=None):
