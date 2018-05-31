@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+
 from ploceus import ssh
+
 from ploceus.inventory import Inventory
 
 
