@@ -181,9 +181,10 @@ def run(command, quiet=False, _raise=True,
 
 def sudo(command, quiet=False, _raise=True,
          sudo_user=None, silence=False):
-    sudo_user = sudo_user or 'root'
-
-    command = 'sudo -u %s -H -i %s' % (sudo_user, command)
+    if sudo_user:
+        command = 'sudo -u %s -H -i %s' % (sudo_user, command)
+    else:
+        command = 'sudo -H -i %s' % (command)
     return run(command, quiet, _raise, silence)
 
 
