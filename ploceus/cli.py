@@ -11,7 +11,8 @@ from ploceus.inventory import Inventory
 from ploceus.logger import logger
 from ploceus.runtime import env
 
-class Ploceus(object):
+
+class PloceusCLI(object):
 
     def __init__(self):
         self.ploceusfile = None
@@ -23,9 +24,11 @@ class Ploceus(object):
         self.disable_pubkey = False
         self.password = None
 
-    def run(self):
+        self.ap = None
+        self.cli_options()
 
-        ap = argparse.ArgumentParser()
+    def cli_options(self):
+        ap = self.ap = argparse.ArgumentParser()
         ap.add_argument(
             '-l', '--list-tasks', action='store_true',
             help='list all avaiable tasks')
@@ -74,7 +77,14 @@ class Ploceus(object):
             'task_name', nargs='?',
             help='task name to carry out')
 
-        options = ap.parse_args()
+    def run(self):
+        # FIXME: 重新定义运行时的参数
+        # 并应用到 **Ploceus** 实例中
+        _ = self._prepare()
+        self._run(*_)
+
+    def _prepare(self):
+        options = self.ap.parse_args()
         # print(options)
 
         if options.debug:
@@ -92,6 +102,7 @@ class Ploceus(object):
             self.list_tasks()
             return 1
 
+        # FIXME: 加载 inventory 根据配置走
         g.inventory = Inventory(options.inventory)
         g.inventory.setup()
 
@@ -137,6 +148,13 @@ class Ploceus(object):
         if options.quiet:
             env.keep_quiet = True
 
+        # FIXME: 临时措施
+        return (task, hosts, ploceus_filename, options, extra_vars, kwargs)
+
+    # FIXME: 临时措施
+    def _run(
+            self, task, hosts, ploceus_filename, options,
+            extra_vars, kwargs):
         # TODO project level logger
         print('Ploceusfile: %s' % ploceus_filename)
         print('task_name: %s' % options.task_name)
@@ -149,9 +167,9 @@ class Ploceus(object):
             parallel=options.parallel,
             ssh_pwd=options.password,
             extra_vars=extra_vars,
+            cli_options=options.__dict__,
             **kwargs
         )
-
 
     def list_tasks(self):
         if len(g.tasks) == 0:
@@ -164,13 +182,14 @@ class Ploceus(object):
 
         print('\n')
 
-
     def list_inventory(self):
         g.inventory.list_inventory()
 
+
 def main():
-    ploceus = Ploceus()
-    ploceus.run()
+    cli = PloceusCLI()
+    return cli.run()
+
 
 if __name__ == '__main__':
     sys.exit(main())
