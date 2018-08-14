@@ -4,13 +4,13 @@ import time
 from ploceus import g
 from ploceus.exceptions import ArgumentError, PloceusError
 from ploceus.inventory import Inventory
-from ploceus.runtime import context_manager
+from ploceus.runtime import context_manager, env
 from ploceus.ssh import SSHClient
 
 def group_task(tasks, group, inventory=None,
                sleep=None, parallel=None,
                ssh_user=None, ssh_pwd=None,
-               extra_vars=None, **kwargs):
+               extra_vars=None, cli_options=None, **kwargs):
     """Programmable interface for running tasks by host groups specified
     in inventory file. This function is  intended to be used by any 3rd-party
     Python code only.
@@ -40,13 +40,14 @@ def group_task(tasks, group, inventory=None,
         ssh_user=ssh_user,
         ssh_pwd=ssh_pwd,
         extra_vars=extra_vars,
+        cli_options=cli_options,
         **kwargs)
 
 
 def run_task(tasks, hosts,
              sleep=None, parallel=None,
              ssh_user=None, ssh_pwd=None,
-             extra_vars=None, **kwargs):
+             extra_vars=None, cli_options=None, **kwargs):
     """Programmable interface for running tasks,
     could be used by any 3rd-party Python code or plocues itself.
 
@@ -80,6 +81,13 @@ def run_task(tasks, hosts,
         username = ssh_user
     if ssh_pwd:
         password = ssh_pwd
+
+    if not cli_options:
+        cli_options = {}
+
+    # FIXME: 定义钩子参数
+    for f in env.setup_hooks:
+        f(cli_options=cli_options)
 
     for task in tasks:
         for host in hosts:

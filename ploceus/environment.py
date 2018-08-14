@@ -5,6 +5,12 @@ class Environment(object):
 
     pre_task_hooks = []
     post_task_hooks = []
+
+    # 2018-08-14
+    setup_hooks = []
+    # not implemented yet
+    teardown_hooks = []
+
     encoding = 'utf-8'
     cwd = None
     ssh_timeout = 5

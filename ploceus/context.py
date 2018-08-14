@@ -5,6 +5,7 @@ import os
 
 from ploceus.utils._collections import ThreadLocalRegistry
 
+
 class Context(dict):
 
     def __init__(self):
@@ -45,6 +46,11 @@ class ContextManager(object):
         self.context = ThreadLocalRegistry(new_context)
 
     def get_context(self):
+        """
+        2018-08-14
+        该方法第一次调用，即生成 ctx
+        是在 ploceus.executor.run_task 方法中
+        """
         return self.context()
 
 
