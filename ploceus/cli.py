@@ -81,6 +81,10 @@ class PloceusCLI(object):
         # FIXME: 重新定义运行时的参数
         # 并应用到 **Ploceus** 实例中
         _ = self._prepare()
+
+        if isinstance(_, int):
+            return _
+
         self._run(*_)
 
     def _prepare(self):
