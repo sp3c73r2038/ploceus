@@ -48,11 +48,11 @@ class SSHClient(object):
             for ident in idents:
                 logger.debug('ident: {}'.format(ident))
                 cls = paramiko.rsakey.RSAKey
-                if ident.lower() == 'rsa':
+                if ident.lower().endswith('rsa'):
                     cls = paramiko.rsakey.RSAKey
-                elif ident.lower() == 'dsa':
+                elif ident.lower().endswith('dsa'):
                     cls = paramiko.dsskey.DSSKey
-                elif ident.lower() == 'ed25519':
+                elif ident.lower().endswith('ed25519'):
                     cls = paramiko.ed25519key.Ed25519Key
                 key = cls.from_private_key_file(ident)
                 if self._auth_by_key(transport, username, key):
@@ -62,11 +62,11 @@ class SSHClient(object):
         if env.ssh_pkeys:
             for ktype, path, passphrase in env.ssh_pkeys:
                 path = expanduser(path)
-                if ktype.lower() == 'rsa':
+                if ktype.lower().endswith('rsa'):
                     cls = paramiko.rsakey.RSAKey
-                elif ktype.lower() == 'dsa':
+                elif ktype.lower().endswith('dsa'):
                     cls = paramiko.dsskey.DSSKey
-                elif ktype.lower() == 'ed25519':
+                elif ktype.lower().endswith('ed25519'):
                     cls = paramiko.ed25519key.Ed25519Key
                 else:
                     msg = 'unsupported keytype {}'.format(ktype)
