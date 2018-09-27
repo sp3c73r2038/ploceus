@@ -267,7 +267,9 @@ class SSHClient(object):
                 port=port,
             )
 
-    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=True):
+    # Set get_pty to False will not allocate a Pseudo-terminal
+    # which means non-interactive shell(non-login shell) and will not invoke .bashrc
+    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False):
         chan = self._transport.open_session(timeout=timeout)
         if get_pty:
             chan.get_pty()
