@@ -185,6 +185,7 @@ def upload_template(dest, template=None, contents=None,
     _template = template
 
     if template is not None:
+        # 渲染模板内容后，借助contents临时文件上传
         assert contents is None
         log('template: %s -> %s' % (template, dest),
             prefix=cyan('upload'))
@@ -194,10 +195,15 @@ def upload_template(dest, template=None, contents=None,
             t = jinja2.Template(f.read(), keep_trailing_newline=True)
             _jinja_make_globals(t)
             contents = t.render(**jinja_ctx)
-            template = None
 
     if contents is not None:
-        assert template is None
+        if template is None:
+            # 若没有模板，直接指定内容
+            # 也需要渲染内容
+            # 否则说明从template过来，已经渲染过
+            t = jinja2.Template(contents, keep_trailing_newline=True)
+            _jinja_make_globals(t)
+            contents = t.render(**jinja_ctx)
         fd, localpath = mkstemp()
         t = os.fdopen(fd, 'w')
         t.write(contents)
