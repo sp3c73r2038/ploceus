@@ -5,7 +5,6 @@ from ploceus.tools import files
 from ploceus.tools import network
 
 
-
 def get_url(url, path, user=None, grp=None, mode=None,
             sha1sum=None, use_sudo=False):
 
@@ -24,4 +23,10 @@ def get_url(url, path, user=None, grp=None, mode=None,
     if mode and mode != files.mode(path):
         files.chmod(path, mode, use_sudo=use_sudo)
 
-    # TODO: verify checksum after download?
+    if sha1sum:
+        newsum = files.sha1sum(path)
+        if sha1sum.lower() != newsum:
+            raise RuntimeError(
+                'sha1sum {} not matched for {} -> {}'.format(
+                    newsum, url, path,
+                ))
