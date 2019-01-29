@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import errno
+import fcntl
 import logging
 import os
-import fcntl
+from queue import Empty, Queue
+import subprocess
+from threading import Thread
 
 
 from ploceus.colors import cyan, green, red
@@ -13,14 +16,12 @@ from ploceus.logger import log, logger
 __all__ = ['run', 'sudo']
 
 
-
 class CommandResult(object):
 
     def __init__(self, stdout, stderr, exitvalue):
         self.stdout = stdout
         self.stderr = stderr
         self.exitvalue = exitvalue
-
 
     def __repr__(self):
         return '<#CommandResult %s>' % self.status()
@@ -33,7 +34,6 @@ class CommandResult(object):
     @property
     def failed(self):
         return self.exitvalue != 0
-
 
     @property
     def succeeded(self):
@@ -79,8 +79,62 @@ def nb_fd_readline(fd):
 
 
 def run_in_child(cmd):
+    return run_in_child_fork(cmd)
+    # return run_in_child_subprocess(cmd)
+
+
+def run_in_child_subprocess(cmd):
+    """
+    run child process using subprocess
+    threading for non-blocking polling stdout, stderr
+
+    pros: simpler code
+    cons: do not guarantee output order
+    """
+    PIPE = subprocess.PIPE
+    p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+
+    def enqueue_data(out, queue):
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
+
+    outQ = Queue()
+    errQ = Queue()
+    t1 = Thread(target=enqueue_data, args=(p.stdout, outQ))
+    t1.daemon = True
+    t2 = Thread(target=enqueue_data, args=(p.stderr, errQ))
+    t2.daemon = True
+    t1.start()
+    t2.start()
+
+    while True:
+        rc = p.poll()
+        if rc is not None:
+            break
+        try:
+            out = outQ.get(timeout=.05)
+        except Empty:
+            pass
+        else:
+            yield out, None, rc
+
+        try:
+            err = errQ.get(timeout=.05)
+        except Empty:
+            pass
+        else:
+            yield None, err, rc
+
+    yield None, None, rc
+
+
+def run_in_child_fork(cmd):
     """run shell command in child process,
     non-blocking yields output.
+
+    pros: output in order, somehow
+    cons: complex code
 
     Args:
         cmd (string): command to run
@@ -225,6 +279,8 @@ def local(command, quiet=False, _raise=True, silence=False):
 
     stdout = '\n'.join(stdout)
     stderr = '\n'.join(stderr)
+
+    logger.info('exitvalue: {}'.format(exitvalue))
 
     if exitvalue != 0:
         if _raise:
