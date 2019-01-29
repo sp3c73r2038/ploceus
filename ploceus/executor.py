@@ -7,6 +7,8 @@ from ploceus.inventory import Inventory
 from ploceus.runtime import context_manager, env
 from ploceus.ssh import SSHClient
 
+from ploceus.logger import logger
+
 def group_task(tasks, group, inventory=None,
                sleep=None, parallel=None,
                ssh_user=None, ssh_pwd=None,
@@ -107,6 +109,9 @@ def run_task(tasks, hosts,
             context['password'] = password
             context['username'] = username
             context['host_string'] = hostname
+
+            logger.debug('username: {}'.format(username))
+            logger.debug('task.ssh_user: {}'.format(task.ssh_user))
 
             client = SSHClient()
             runner.append_ssh_client(client)

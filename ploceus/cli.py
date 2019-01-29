@@ -140,7 +140,7 @@ class PloceusCLI(object):
         task = g.tasks.get(options.task_name)
         if task is None:
             print('\n\tunknown task: %s\n' % options.task_name)
-            return
+            return 1
 
         kwargs = {}
 

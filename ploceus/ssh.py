@@ -44,6 +44,7 @@ class SSHClient(object):
     def _auto_auth(self, transport, username, config):
         # 0x0 IdentifyFile in ssh_config
         if 'identityfile' in config:
+            logger.debug('auth identityfile')
             idents = config['identityfile']
             for ident in idents:
                 logger.debug('ident: {}'.format(ident))
@@ -60,6 +61,7 @@ class SSHClient(object):
 
         # 0x1 env.ssh_pkeys
         if env.ssh_pkeys:
+            logger.debug('auth env.ssh_keys')
             for ktype, path, passphrase in env.ssh_pkeys:
                 path = expanduser(path)
                 if ktype.lower().endswith('rsa'):
@@ -76,6 +78,7 @@ class SSHClient(object):
                     return
 
         # 0x2 agent keys
+        logger.debug('auth ssh-agent')
         agent = paramiko.Agent()
         for key in agent.get_keys():
             if self._auth_by_key(transport, username, key):
@@ -83,6 +86,7 @@ class SSHClient(object):
 
         # 0x3 frequently used keys
         # id_rsa
+        logger.debug('auth ~/.ssh/id_rsa')
         path = expanduser('~/.ssh/id_rsa')
         if isfile(path):
             try:
@@ -93,6 +97,7 @@ class SSHClient(object):
                 pass
 
         # id_dsa
+        logger.debug('auth ~/.ssh/id_dsa')
         path = expanduser('~/.ssh/id_dsa')
         if isfile(path):
             try:
@@ -103,6 +108,7 @@ class SSHClient(object):
                 pass
 
         # id_ed25519
+        logger.debug('auth ~/.ssh/id_ed25519')
         path = expanduser('~/.ssh/id_ed25519')
         if isfile(path):
             try:
@@ -151,7 +157,7 @@ class SSHClient(object):
 
         sock.settimeout(env.ssh_timeout)
 
-        logger.debug('connecting to %s:%s' % (hostname, port))
+        logger.debug('connecting to %s@%s:%s' % (username, hostname, port))
 
         sock.connect((hostname, port))
         self._transport = paramiko.transport.Transport(sock)
