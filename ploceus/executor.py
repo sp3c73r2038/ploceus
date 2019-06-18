@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
+from concurrent.futures import ThreadPoolExecutor
+import os
 import time
 
-from ploceus import g
-from ploceus.exceptions import ArgumentError, PloceusError
-from ploceus.inventory import Inventory
-from ploceus.runtime import context_manager, env
-from ploceus.ssh import SSHClient
+import terminaltables
 
-from ploceus.logger import logger
+from ploceus import g
+from ploceus import colors as color
+from ploceus.context import Context
+from ploceus.exceptions import ArgumentError
+from ploceus.logger import log
+import ploceus.runtime as runtime
+from ploceus.ssh import SSHClient
+from ploceus.task import Task
 
 def group_task(tasks, group, inventory=None,
                sleep=None, parallel=None,
                ssh_user=None, ssh_pwd=None,
-               extra_vars=None, cli_options=None, **kwargs):
+               extra_vars=None, cli_options=None,
+               concurrency=None, **kwargs):
     """Programmable interface for running tasks by host groups specified
     in inventory file. This function is  intended to be used by any 3rd-party
     Python code only.
@@ -43,13 +49,15 @@ def group_task(tasks, group, inventory=None,
         ssh_pwd=ssh_pwd,
         extra_vars=extra_vars,
         cli_options=cli_options,
+        concurrency=concurrency,
         **kwargs)
 
 
 def run_task(tasks, hosts,
              sleep=None, parallel=None,
              ssh_user=None, ssh_pwd=None,
-             extra_vars=None, cli_options=None, **kwargs):
+             extra_vars=None, cli_options=None,
+             concurrency=None, **kwargs):
     """Programmable interface for running tasks,
     could be used by any 3rd-party Python code or plocues itself.
 
@@ -67,12 +75,7 @@ def run_task(tasks, hosts,
         extra_vars (dict): additional variables which be inserted into context
         **kwargs (dict): keyword arguments will pass to decorated function
     """
-    # TODO:
-    if parallel:
-        raise PloceusError('parallel mode no implemented yet.')
-
     rv = {}
-    runner = TaskRunner()
     username = None
     password = None
 
@@ -91,68 +94,151 @@ def run_task(tasks, hosts,
         cli_options = {}
 
     # FIXME: 定义钩子参数
-    for f in env.setup_hooks:
+    for f in runtime.env.setup_hooks:
         f(cli_options=cli_options)
 
+    if not concurrency:
+        concurrency = os.cpu_count()
+
+    if not parallel:
+        concurrency = 1
+
+    ts = time.time()
+
     for task in tasks:
+        pool = ThreadPoolExecutor(max_workers=concurrency)
+        tracking = []
+
         for host in hosts:
-            context = context_manager.get_context()
-            hostname = host
-            # connect to remote host
+            payload = {
+                'username': username,
+                'password': password,
+                'hostname': host,
+                'task': task,
+                'extra_vars': extra_vars,
+                'kwargs': kwargs,
+            }
 
+            executor = DutyExecutor(payload)
+            future = pool.submit(executor.execute)
+            tracking.append(future)
+
+            if sleep:
+                time.sleep(sleep)
+
+        results = []
+        pool.shutdown(wait=True)
+        for future in tracking:
+            if future.done():
+                result = future.result()
+                results.append(result)
+                continue
+            if not future.running():
+                ex = future.exception()
+                results.append(ex)
+
+    rv = results
+    # FIXME: legacy code is buggy!
+    buggyResult = {x.hostname: x for x in rv}
+
+    te = time.time()
+    if os.environ.get('LOG_TIMECOST'):
+        processResult(buggyResult, te - ts)
+
+    # TODO: dispose all ssh client connection
+    return buggyResult
+
+
+def processResult(results, realTime):
+    # FIXME: buggy result
+    title = 'execution result'
+
+    tableData = [['Hostname', 'Result OK', 'timecost(s)']]
+
+    print('')
+    print('')
+    totalTimecost = 0
+    for hostname, result in results.items():
+        c = color.green
+        s = 'OK'
+        if not result.ok:
+            c = color.red
+            s = 'NG'
+        row = [c(x) for x in [hostname, s, '{:.3f}'.format(result.timecost)]]
+        totalTimecost += result.timecost
+        tableData.append(row)
+    table = terminaltables.AsciiTable(tableData, title)
+
+    lines = table.table.split('\n')
+    indent = 8
+    out = '\n'.join([' ' * indent + x for x in lines])
+    print(out)
+
+    print('')
+    print(' ' * indent + 'total timecost: {:.3f}s'.format(totalTimecost))
+    print(' ' * indent + ' real timecost: {:.3f}s'.format(realTime))
+    print(' ' * indent + 'speed up: {:.1f}x'.format(
+        totalTimecost / realTime))
+    print('')
+    print('')
+
+
+class DutyExecutor(object):
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    def execute(self):
+        payload = self.payload
+
+        kwargs = payload['kwargs'] or {}
+        task = payload['task']
+        hostname = payload['hostname']
+        extra_vars = payload['extra_vars'] or {}
+
+        # entry from cli will be a Task instance
+        # otherwise, just wrap it with a new Task
+        if not isinstance(task, Task):
+            task = Task(task)
+
+        username = payload.pop('username', task.ssh_user)
+        password = payload.pop('password', None)
+
+        ctx = runtime.env.getCurrentCtx()
+        ctx.task = task
+        ctx.hostname = hostname
+
+        context = ctx.taskCtx
+
+        if '@' in hostname:
+            _, hostname = hostname.split('@', maxsplit=1)
             if not username:
-                username = task.ssh_user
+                username = _
 
-            if '@' in hostname:
-                _, hostname = hostname.split('@', maxsplit=1)
-                if not username:
-                    username = _
+        # setting context
+        context['password'] = password
+        context['username'] = username
+        context['host_string'] = hostname
 
-            # setting context
-            context['password'] = password
-            context['username'] = username
-            context['host_string'] = hostname
+        client = SSHClient()
+        # runner.append_ssh_client(client)
+        context.sshclient = client
 
-            logger.debug('username: {}'.format(username))
-            logger.debug('task.ssh_user: {}'.format(task.ssh_user))
+        # ansible like host_vars
+        extra_vars.update(
+            g.inventory.get_target_host(hostname))
 
-            client = SSHClient()
-            runner.append_ssh_client(client)
-            context.sshclient = client
+        ts = time.time()
+        rv = task.run(extra_vars=extra_vars, **kwargs)
+        te = time.time()
 
-            # ansible like host_vars
-            extra_vars = extra_vars or {}
-            extra_vars.update(
-                g.inventory.get_target_host(hostname))
+        # TODO:
+        rv.hostname = ctx.hostname
+        rv.timecost = te - ts
 
-            rv[hostname] = task.run(extra_vars=extra_vars, **kwargs)
+        # ugly hack for non-breaking usage
+        if os.environ.get('LOG_TIMECOST'):
+            log(color.yellow('task {} timecost: {:.3f}s').format(
+                task.name, rv.timecost))
 
-        if sleep:
-            time.sleep(sleep)
-
-    runner.dispose_ssh_clients()
-    return rv
-
-
-class TaskRunner(object):
-    """runner to carry out a task
-    """
-
-    ssh_clients = []
-
-    def append_ssh_client(self, client):
-        """register ssh client to TaskRunner
-
-        Args:
-            client (ploceus.ssh.SSHClient): client to record
-        """
-        self.ssh_clients.append(client)
-
-
-    def dispose_ssh_clients(self):
-        """close all ssh clients registered.
-        """
-        for c in self.ssh_clients:
-            c.close()
-
-        del self.ssh_clients[:]
+        return rv

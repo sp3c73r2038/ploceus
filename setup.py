@@ -9,7 +9,8 @@ setup(
         'pycrypto',
         'paramiko>=2.3',
         'PyYAML',
-        'Jinja2'
+        'Jinja2',
+        'terminaltables',
     ],
     entry_points="""
     [console_scripts]

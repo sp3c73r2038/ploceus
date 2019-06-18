@@ -3,12 +3,13 @@ import errno
 import fcntl
 import logging
 import os
+import pprint
 from queue import Empty, Queue
 import subprocess
 from threading import Thread
 
 
-from ploceus.colors import cyan, green, red
+from ploceus.colors import cyan, green, red, yellow
 from ploceus.exceptions import LocalCommandError, RemoteCommandError
 from ploceus.runtime import context_manager, env
 from ploceus.logger import log, logger
@@ -149,7 +150,7 @@ def run_in_child_subprocess(cmd, env):
     yield None, None, rc
 
 
-def run_in_child_fork(cmd):
+def run_in_child_fork(cmd, env):
     """run shell command in child process,
     non-blocking yields output.
 
@@ -158,6 +159,7 @@ def run_in_child_fork(cmd):
 
     Args:
         cmd (string): command to run
+        env (dict): environment variables
 
     Returns:
         bytes, bytes, int: stderr, stderr and exit value,
@@ -165,6 +167,8 @@ def run_in_child_fork(cmd):
             exit value should use the last one.
 
     """
+    logger.debug('env: {}'.format(pprint.pformat(env)))
+
     outr, outw = os.pipe()
     errr, errw = os.pipe()
     pid = os.fork()
@@ -180,7 +184,7 @@ def run_in_child_fork(cmd):
         os.close(errr)
         os.close(errw)
 
-        os.execl('/bin/bash', 'bash', '-c', cmd)
+        os.execle('/bin/bash', 'bash', '-c', cmd, env)
     else:
         f = fcntl.fcntl(outr, fcntl.F_GETFL)
         fcntl.fcntl(outr, fcntl.F_SETFL, f | os.O_NONBLOCK)
@@ -246,7 +250,8 @@ def run(command, quiet=False, _raise=True,
         silence=False, *args, **kwargs):
     # TODO: global sudo
 
-    context = context_manager.get_context()
+    if not command:
+        raise ValueError('empty command')
 
     _, stdout, stderr, rc = _run_command(
         command, quiet, _raise, silence)
@@ -263,6 +268,9 @@ def sudo(command, quiet=False, _raise=True,
 
 
 def local(command, quiet=False, _raise=True, silence=False, _env=None):
+
+    if not command:
+        raise ValueError('empty command')
 
     context = context_manager.get_context()
 
@@ -297,7 +305,7 @@ def local(command, quiet=False, _raise=True, silence=False, _env=None):
             stderr.append(line)
             if not quiet and not env.keep_quiet:
                 _ = '[%s] %s: %s' %\
-                    (green('local'), red('stderr'), line.strip())
+                    (green('local'), yellow('stderr'), line.strip())
                 logger.error(_)
 
     stdout = '\n'.join(stdout)
@@ -317,31 +325,31 @@ def _run_command(command, quiet=False, _raise=True, silence=False):
     context = context_manager.get_context()
 
     client = context.get_client()
-    hostname = context['host_string']
-
     wrapped_command = command
 
     if context.get('cwd'):
         wrapped_command = 'cd %s && %s' % (context.get('cwd'), command)
 
+    def cb(line, tag):
+        if quiet:
+            return
+        if env.keep_quiet:
+            return
+        if tag == 'err':
+            log(line.strip(), prefix=yellow('stderr'))
+        else:
+            log(line.strip(), prefix='stdout')
+
     if not silence:
         log(wrapped_command, prefix=cyan('run'))
-    stdin, stdout, stderr, rc = client.exec_command(wrapped_command)
+    stdin, stdout, stderr, rc = client.exec_command(
+        wrapped_command, output_callback=cb)
 
-    stdout = stdout.read().decode(env.encoding)
-    stderr = stderr.read().decode(env.encoding)
+    # stdout = stdout.decode(env.encoding)
+    # stderr = stderr.decode(env.encoding)
 
-    if rc != 0:
-        if quiet is False and not env.keep_quiet:
-            for line in stderr.split('\n'):
-                log(line.strip(), prefix=red('stderr'))
-
-        if _raise:
-            raise RemoteCommandError(
-                'stdout: %s\n\nstderr: %s' % (stdout, stderr))
-
-    if quiet is False and not env.keep_quiet:
-        for line in stdout.split('\n'):
-                log(line.strip(), prefix='stdout')
+    if rc != 0 and _raise:
+        raise RemoteCommandError(
+            'stdout: %s\n\nstderr: %s' % (stdout, stderr))
 
     return stdin, stdout, stderr, rc

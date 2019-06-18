@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from ploceus.utils._collections import ScopedRegistry
+from ploceus.context import Context
+
+from _thread import get_ident
 
 
 class Environment(object):
@@ -32,3 +36,17 @@ class Environment(object):
     # with passphrase
     # ('ed25519', '~/.ssh/another/id_ed25519', 'somepass')
     ssh_pkeys = []
+
+    def __init__(self):
+        self.scope = ScopedRegistry(
+            ExecutorContext, get_ident)
+
+    def getCurrentCtx(self):
+        return self.scope()
+
+
+class ExecutorContext(object):
+
+    def __init__(self):
+        self.taskCtx = Context()
+        self.duty = None

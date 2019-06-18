@@ -2,14 +2,14 @@
 from contextlib import contextmanager
 import os
 
-
 from ploceus.utils._collections import ThreadLocalRegistry
 
 
 class Context(dict):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.sshclient = None
+        super().__init__(*args, **kwargs)
 
     def get_client(self):
 
@@ -43,15 +43,13 @@ def new_context():
 class ContextManager(object):
 
     def __init__(self):
-        self.context = ThreadLocalRegistry(new_context)
+        # self.context = ThreadLocalRegistry(new_context)
+        pass
 
     def get_context(self):
-        """
-        2018-08-14
-        该方法第一次调用，即生成 ctx
-        是在 ploceus.executor.run_task 方法中
-        """
-        return self.context()
+        from ploceus.runtime import env
+        ctx = env.getCurrentCtx()
+        return ctx.taskCtx
 
 
 def cd(path):

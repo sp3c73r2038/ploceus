@@ -3,7 +3,9 @@ import binascii
 import getpass
 import logging
 from os.path import expanduser, isfile
+from queue import Empty, Queue
 import socket
+from threading import Thread
 
 import paramiko
 
@@ -133,6 +135,8 @@ class SSHClient(object):
             if transport.is_authenticated():
                 rv = True
         except paramiko.ssh_exception.AuthenticationException:
+            pass
+        except paramiko.ssh_exception.SSHException:
             pass
         return rv
 
@@ -275,26 +279,94 @@ class SSHClient(object):
 
     # Set get_pty to False will not allocate a Pseudo-terminal
     # which means non-interactive shell(non-login shell) and will not invoke .bashrc
-    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False):
+    def exec_command(
+            self, command, bufsize=-1, timeout=None, get_pty=False,
+            output_callback=None):
         chan = self._transport.open_session(timeout=timeout)
         if get_pty:
             chan.get_pty()
-        chan.settimeout(timeout)
+        # http://docs.paramiko.org/en/latest/api/channel.html#paramiko.channel.Channel.settimeout
+        # this might not be something like you thought
+        # chan.settimeout(timeout)
         chan.exec_command(command)
         stdin = chan.makefile('wb', bufsize)
         stdout = chan.makefile('r', bufsize)
         stderr = chan.makefile_stderr('r', bufsize)
-        rc = chan.recv_exit_status()
-        return stdin, stdout, stderr, rc
 
+        if not output_callback:
+            # no output callback, wait for exit value synchronously
+            rc = chan.recv_exit_status()
+            return stdin, stdout.read(), stderr.read(), rc
+
+        if not callable(output_callback):
+            raise RuntimeError('output_callback should be a function')
+
+        # callback, wait asynchronously
+        rc, out, err = self._asyncReadRemoteOutput(
+            chan, stdout, stderr, output_callback)
+        return stdin, out, err, rc
+
+    def _asyncReadRemoteOutput(self, chan, stdout, stderr, cb):
+        q = Queue()
+
+        def enqueueData(out, q, tag=None):
+            for line in iter(out.readline, ''):
+                q.put((line, tag))
+            out.close()
+
+        t1 = Thread(target=enqueueData, args=(stdout, q, 'out'))
+        t2 = Thread(target=enqueueData, args=(stderr, q, 'err'))
+        t1.setDaemon(True)
+        t2.setDaemon(True)
+        t1.start()
+        t2.start()
+
+        out = []
+        err = []
+
+        while True:
+            if chan.exit_status_ready():
+                rc = chan.recv_exit_status()
+                break
+            try:
+                line, tag = q.get(timeout=.05)
+                if not line:
+                    continue
+                if tag == 'err':
+                    err.append(line)
+                else:
+                    out.append(line)
+            except Empty:
+                pass
+            else:
+                cb(line, tag)
+
+        # wait thread to drain file content into queue
+        t1.join()
+        t2.join()
+
+        # drain queue
+        while True:
+            try:
+                line, tag = q.get(timeout=.05)
+                if not line:
+                    continue
+                if tag == 'err':
+                    err.append(line)
+                else:
+                    out.append(line)
+            except Empty:
+                break
+            else:
+                cb(line, tag)
+
+        return rc, ''.join(out), ''.join(err)
 
     def put_file(self, src, dest):
         self.sftp.put(src, dest)
 
-
     def get_file(self, src, dest):
         self.sftp.get(src, dest)
-
 
     def close(self):
         if self._transport:

@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
+import os
 import sys
+import time
+
+import terminaltables
 
 from ploceus import g
 from ploceus import ploceusfile
+import ploceus.colors as color
 from ploceus.exceptions import ArgumentError
 from ploceus.executor import run_task
 from ploceus.inventory import Inventory
@@ -19,7 +24,6 @@ class PloceusCLI(object):
         self.hosts = []
         self.task_name = None
         self.group = None
-        self.parallel = False
         self.sleep = 0
         self.disable_pubkey = False
         self.password = None
@@ -48,6 +52,10 @@ class PloceusCLI(object):
         ap.add_argument(
             '-P', '--parallel', action='store_true',
             help='run task across hosts parallelly'
+        )
+        ap.add_argument(
+            '-c', '--concurrency', default=os.cpu_count(),
+            help='max concurrency for parallel execution'
         )
         ap.add_argument(
             '-s', '--sleep', default=0, type=int,
@@ -85,7 +93,9 @@ class PloceusCLI(object):
         if isinstance(_, int):
             return _
 
-        self._run(*_)
+        results, timecost = self._run(*_)
+        self.processResult(results, timecost)
+        return 0
 
     def _prepare(self):
         options = self.ap.parse_args()
@@ -164,8 +174,12 @@ class PloceusCLI(object):
         print('task_name: %s' % options.task_name)
         print('host: %s' % hosts)
         print('keep_quiet: %s' % options.quiet)
+        print('parallel: %s' % options.parallel)
+        print('concurrency: %s' % options.concurrency)
 
-        run_task(
+        ts = time.time()
+
+        rv = run_task(
             task, hosts,
             sleep=options.sleep,
             parallel=options.parallel,
@@ -174,6 +188,9 @@ class PloceusCLI(object):
             cli_options=options.__dict__,
             **kwargs
         )
+        te = time.time()
+        timecost = (te - ts)
+        return rv, timecost
 
     def list_tasks(self):
         if len(g.tasks) == 0:
@@ -188,6 +205,39 @@ class PloceusCLI(object):
 
     def list_inventory(self):
         g.inventory.list_inventory()
+
+    def processResult(self, results, realTime):
+        # FIXME: buggy result
+        title = 'execution result'
+
+        tableData = [['Hostname', 'Result OK', 'timecost(s)']]
+
+        print('')
+        print('')
+        totalTimecost = 0
+        for hostname, result in results.items():
+            c = color.green
+            s = 'OK'
+            if not result.ok:
+                c = color.red
+                s = 'NG'
+            row = [c(x) for x in [hostname, s, '{:.3f}'.format(result.timecost)]]
+            totalTimecost += result.timecost
+            tableData.append(row)
+        table = terminaltables.AsciiTable(tableData, title)
+
+        lines = table.table.split('\n')
+        indent = 8
+        out = '\n'.join([' ' * indent + x for x in lines])
+        print(out)
+
+        print('')
+        print(' ' * indent + 'total timecost: {:.3f}s'.format(totalTimecost))
+        print(' ' * indent + ' real timecost: {:.3f}s'.format(realTime))
+        print(' ' * indent + 'speed up: {:.1f}x'.format(
+            totalTimecost / realTime))
+        print('')
+        print('')
 
 
 def main():

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import hashlib
+import logging
 import os
 from pathlib import Path
 from tempfile import mkstemp
@@ -7,7 +8,7 @@ from tempfile import mkstemp
 import jinja2
 
 from ploceus.colors import cyan
-from ploceus.helper import run, sudo
+from ploceus.helper import local, run, sudo
 from ploceus.logger import log
 from ploceus.runtime import context_manager, env
 
@@ -36,6 +37,13 @@ def is_symlink(path, use_sudo=None, sudo_user=None):
     return _('test -L %s' % path,
              quiet=True, silence=True,
              sudo_user=sudo_user, _raise=False).succeeded
+
+
+def exists(path, use_sudo=None, sudo_user=None):
+    _ = (use_sudo and sudo) or run
+    return _('test -e %s' % path,
+             quiet=True, silence=True,
+             sudo_user=sudo_user, _raise=False).ok
 
 
 def owner(path, use_sudo=None, sudo_user=None):
@@ -118,7 +126,6 @@ def symlink(src, dest, user=None, grp=None,
     _(cmd, sudo_user=sudo_user)
 
 
-
 def upload_file(dest, src=None, contents=None,
                 user=None, grp=None, mode=None,
                 use_sudo=False, quiet=False, silence=False,
@@ -144,26 +151,46 @@ def upload_file(dest, src=None, contents=None,
     if not Path(localpath).is_file():
         localpath = os.path.join(env.template_path, localpath)
 
+    if not os.path.isfile(localpath):
+        raise RuntimeError(
+            'localpath: "{}" not exists, or not a file'.format(localpath))
+
+    # avoid duplicating upload
+    if is_file(dest):
+        # only check when dest existing
+        remote_checksum = sha1sum(dest)
+        local_checksum = py_sha1sum(localpath)
+        if remote_checksum == local_checksum:
+            return
+
     origin_dest = dest
-    if use_sudo:
-        h = hashlib.sha1()
-        h.update(context['host_string'].encode('ascii'))
-        h.update(dest.encode('utf-8'))
-        dest = os.path.join(temp_dir, h.hexdigest())
+    h = hashlib.sha1()
+    h.update(context['host_string'].encode('ascii'))
+    h.update(dest.encode('utf-8'))
+    dest = os.path.join(temp_dir, h.hexdigest())
 
     ssh.sftp.put(localpath, dest)
 
     if t is not None:
         os.unlink(localpath)
 
-    if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
-        chown(dest, user, grp, use_sudo=use_sudo)
+    use_install = False
+    if run('command -v install', _raise=False, quiet=True, silence=True).ok:
+        use_install = True
 
-    if mode and (_mode(dest) != mode):
-        chmod(dest, mode, use_sudo=use_sudo)
-
-    if use_sudo:
-        sudo('mv %s %s' % (dest, origin_dest), quiet=True, silence=True)
+    _ = use_sudo and sudo or run
+    if use_install:
+        install_mode = '-m644'
+        if mode:
+            install_mode = '-m{}'.format(mode)
+        cmd = 'install {} {} {}'.format(install_mode, dest, origin_dest)
+        _(cmd, quiet=True, silence=True)
+    else:
+        if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
+            chown(dest, user, grp, use_sudo=use_sudo)
+        if mode and (_mode(dest) != mode):
+            chmod(dest, mode, use_sudo=use_sudo)
+        _('mv %s %s' % (dest, origin_dest), quiet=True, silence=True)
 
 
 def upload_template(dest, template=None, contents=None,
@@ -175,7 +202,6 @@ def upload_template(dest, template=None, contents=None,
     jinja_ctx = jinja_ctx or {}
     if 'extra_vars' in context and context['extra_vars']:
         jinja_ctx.update(context['extra_vars'])
-
 
     _ctx = context.copy()
     # _ctx.pop('sshclient')
@@ -229,3 +255,27 @@ def sha1sum(path, use_sudo=False):
     _ = (use_sudo and sudo) or run
     return _('sha1sum %s' % path,
              quiet=True, silence=True).stdout.strip().split()[0].lower()
+
+
+def py_md5sum(path, bufsize=64 * 1024):
+    m = hashlib.md5()
+    with open(path, 'rb') as f:
+        while True:
+            b = f.read(bufsize)
+            if not b:
+                break
+            m.update(b)
+    rv = m.hexdigest()
+    return rv
+
+
+def py_sha1sum(path, bufsize=64 * 1024):
+    m = hashlib.sha1()
+    with open(path, 'rb') as f:
+        while True:
+            b = f.read(bufsize)
+            if not b:
+                break
+            m.update(b)
+    rv = m.hexdigest()
+    return rv
