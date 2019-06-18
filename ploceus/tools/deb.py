@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from ploceus.helper import run, sudo
-from ploceus.tools import files
+
+from . import files
 
 
 MANAGER = 'DEBIAN_FRONTEND=noninteractive apt-get'
+
 
 def update_index(quiet=True):
 

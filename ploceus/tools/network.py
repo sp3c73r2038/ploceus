@@ -11,4 +11,9 @@ def download(url, dest, use_sudo=False):
     logger.info('download: {} => {}'.format(
         url, dest,
     ))
-    _('curl -s %s -o %s' % (url, dest), quiet=True)
+    if run('command -v curl', _raise=False).ok:
+        _('curl -s %s -o %s' % (url, dest), quiet=True)
+        return
+    if run('command -v wget', _raise=False).ok:
+        _('wget -q -O %s %s' % (dest, url), quiet=True)
+        return

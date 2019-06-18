@@ -4,7 +4,6 @@ from ploceus.logger import log
 from ploceus.tools.service import is_running, start, stop, restart, reload
 
 
-
 def started(service):
     if not is_running(service):
         start(service)

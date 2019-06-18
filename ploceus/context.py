@@ -3,7 +3,6 @@ from contextlib import contextmanager
 import os
 import warnings
 
-
 from ploceus.utils.collections import ThreadLocalRegistry
 from ploceus.utils.local import LocalStack
 
@@ -34,8 +33,9 @@ class Context(dict):
     context for single task execution
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.sshclient = None
+        super().__init__(*args, **kwargs)
 
     def get_client(self):
         if not self.sshclient._connected:

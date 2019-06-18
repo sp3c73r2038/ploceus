@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import threading
-import time
-
 from ploceus import g
+import ploceus.colors as color
+from ploceus.logger import log
 from ploceus.runtime import context_manager, env
 
+import logging
+logger = logging.getLogger('ploceus.general')
 
 
 class TaskResult(object):
@@ -19,7 +20,9 @@ class TaskResult(object):
         self.rv = None
         self.error = None
         self.name = name
-
+        self.hostname = None
+        self.timecost = None
+        self.sshclient = None
 
     @property
     def failed(self):
@@ -91,7 +94,6 @@ class Task(object):
     def __str__(self):
         return '<ploceus.task.Task %s>' % self.name
 
-
     def run(self, extra_vars, **kwargs):
         """wrapper, execute task against single host
 
@@ -103,17 +105,19 @@ class Task(object):
             TaskResult: running result
         """
         rv = TaskResult(self.name)
+
         try:
             _ = self._run(extra_vars, **kwargs)
             rv.rv = _
         except Exception as e:
+            log(color.red(
+                "error when executing task {}".format(self.name)))
+            if env.break_on_error:
+                raise
             import traceback
             traceback.print_exc()
             rv.error = e
-            if env.break_on_error:
-                raise
         return rv
-
 
     def _run(self, extra_vars, **kwargs):
         """wrapper, execute task against single host
