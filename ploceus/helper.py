@@ -78,12 +78,13 @@ def nb_fd_readline(fd):
                     raise
 
 
-def run_in_child(cmd):
-    return run_in_child_fork(cmd)
-    # return run_in_child_subprocess(cmd)
+def run_in_child(cmd, env):
+    # nb_fd_readline will drain CPU
+    # return run_in_child_fork(cmd, env)
+    return run_in_child_subprocess(cmd, env)
 
 
-def run_in_child_subprocess(cmd):
+def run_in_child_subprocess(cmd, env):
     """
     run child process using subprocess
     threading for non-blocking polling stdout, stderr
@@ -92,7 +93,7 @@ def run_in_child_subprocess(cmd):
     cons: do not guarantee output order
     """
     PIPE = subprocess.PIPE
-    p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+    p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, env=env)
 
     def enqueue_data(out, queue):
         for line in iter(out.readline, b''):
@@ -123,6 +124,25 @@ def run_in_child_subprocess(cmd):
             err = errQ.get(timeout=.05)
         except Empty:
             pass
+        else:
+            yield None, err, rc
+
+    t1.join()
+    t2.join()
+
+    while True:
+        try:
+            out = outQ.get(timeout=.05)
+        except Empty:
+            break
+        else:
+            yield out, None, rc
+
+    while True:
+        try:
+            err = errQ.get(timeout=.05)
+        except Empty:
+            break
         else:
             yield None, err, rc
 
@@ -242,9 +262,12 @@ def sudo(command, quiet=False, _raise=True,
     return run(command, quiet, _raise, silence)
 
 
-def local(command, quiet=False, _raise=True, silence=False):
+def local(command, quiet=False, _raise=True, silence=False, _env=None):
 
     context = context_manager.get_context()
+
+    if _env is None:
+        _env = dict(os.environ)
 
     wrapped_command = command
     if context.get('cwd'):
@@ -261,7 +284,7 @@ def local(command, quiet=False, _raise=True, silence=False):
     stdout = []
     stderr = []
     exitvalue = 0
-    for outline, errline, exitvalue in run_in_child(command):
+    for outline, errline, exitvalue in run_in_child(command, _env):
         if outline:
             line = outline.decode(env.encoding).strip()
             stdout.append(line)
