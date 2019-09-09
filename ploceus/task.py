@@ -140,5 +140,5 @@ class Task(object):
 
         return rv
 
-    def __call__(self, **kwargs):
-        return self.func(**kwargs)
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
