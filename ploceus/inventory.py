@@ -47,7 +47,7 @@ class Inventory(object):
 
     def _parse_inventory(self, fname):
         with open(fname) as f:
-            return yaml.load(f.read())
+            return yaml.safe_load(f.read())
 
     @property
     def empty(self):
