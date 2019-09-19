@@ -76,6 +76,9 @@ def run_task(tasks, hosts,
     username = None
     password = None
 
+    if not isinstance(hosts, list):
+        raise RuntimeError('hosts should be a list')
+
     if type(tasks) != list:
         tasks = [tasks]
 
