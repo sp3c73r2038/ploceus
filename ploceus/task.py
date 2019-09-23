@@ -20,6 +20,7 @@ class TaskResult(object):
         self.rv = None
         self.error = None
         self.name = name
+        self.task = None
         self.hostname = None
         self.timecost = None
         self.sshclient = None

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import os
 import time
@@ -110,6 +111,7 @@ def run_task(tasks, hosts,
 
     ts = time.time()
 
+    results = []
     for task in tasks:
         pool = ThreadPoolExecutor(max_workers=concurrency)
         tracking = []
@@ -129,10 +131,10 @@ def run_task(tasks, hosts,
             )
             tracking.append(future)
 
+            # FIXME: sleep is only useful in pool, not here
             if sleep:
                 time.sleep(sleep)
 
-        results = []
         pool.shutdown(wait=True)
         for future in tracking:
             if future.done():
@@ -147,17 +149,29 @@ def run_task(tasks, hosts,
     for rt in results:
         if rt.sshclient:
             rt.sshclient.close()
+            rt.sshclient = None
 
     rv = results
     # FIXME: legacy code is buggy!
     buggyResult = {x.hostname: x for x in rv}
+    rv = ExecuteResult()
+    rv.update(buggyResult)
+
+    rv.result = defaultdict(dict)
+    for rt in results:
+        if isinstance(rt.task, Task):
+            name = rt.task.name
+        else:
+            name = rt.task.__name__
+        taskName = rt.task.__module__ + '.' + name
+        rv.result[rt.hostname][taskName] = rt
+    rv.result = dict(rv.result)
 
     te = time.time()
     if os.environ.get('LOG_TIMECOST'):
-        processResult(buggyResult, te - ts)
+        processResult(rv, te - ts)
 
-    return buggyResult
-
+    return rv
 
 def processResult(results, realTime):
     # FIXME: buggy result
@@ -229,6 +243,7 @@ def execute(task, hostname, **options):
     te = time.time()
     context = scope.pop()
 
+    rv.task = task
     rv.hostname = hostname
     rv.timecost = te - ts
     if sshclient:
@@ -240,3 +255,32 @@ def execute(task, hostname, **options):
             task.name, rv.timecost))
 
     return rv
+
+
+class ExecuteResult(dict):
+    """
+
+    for compatibility purpose, (rather wrong) result will be accessible
+    through dict API, e.g. result['hostname'], result.get('hostname')
+    """
+
+    def __init__(self):
+        self.result = None
+
+    def get_result(self, hostname, taskName):
+        """
+        result is nested like
+
+        {
+          'hostname': {
+            'taskName': ...
+          }
+        }
+
+        taskName can be retrieve by
+        (task or func).__module__ + '.' + (task or func).__name__
+        """
+        rv = self.result.get('hostname')
+        if rv is None:
+            return rv
+        return rv.get(taskName)
