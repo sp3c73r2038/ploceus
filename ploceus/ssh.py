@@ -11,7 +11,7 @@ import paramiko
 
 from ploceus.runtime import env
 
-logger = logging.getLogger('ploceus.general')
+logger = logging.getLogger(__name__)
 
 
 class SSHClient(object):
@@ -186,6 +186,10 @@ class SSHClient(object):
     def connectUsingGateway(self, gateway, hostname, username,
                             password, port):
 
+        gwUser = ''
+        if '@' in gateway:
+            gwUser, gateway = gateway.split('@', 1)
+
         host_sshconfig = self._sshconfig.lookup(gateway)
 
         sflags = socket.SOCK_STREAM
@@ -195,7 +199,8 @@ class SSHClient(object):
         sock = socket.socket(socket.AF_INET,
                              socket.SOCK_STREAM | sflags)
 
-        gwUser = username or host_sshconfig.get('user', getpass.getuser())
+        gwUser = gwUser or username or host_sshconfig.get(
+            'user', getpass.getuser())
         gwHost = host_sshconfig['hostname']
         gwPort = int(host_sshconfig.get('port', 22))
 
@@ -223,6 +228,8 @@ class SSHClient(object):
                  'connecting to gateway %s@%s') % \
                 (gwUser, gateway))
 
+        print(hostname)
+        print(port)
         targetSock = self._gwTransport.open_channel(
             'direct-tcpip',
             dest_addr=(hostname, port),

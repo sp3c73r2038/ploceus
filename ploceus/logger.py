@@ -2,6 +2,8 @@
 import logging
 import sys
 
+import coloredlogs
+
 from ploceus.colors import green
 
 logger = logging.getLogger('ploceus.helper')
@@ -12,7 +14,7 @@ logger.addHandler(hdl)
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
-logger = logging.getLogger('ploceus.general')
+logger = logging.getLogger('ploceus')
 del logger.handlers[:]
 hdl = logging.StreamHandler(sys.stderr)
 hdl.setLevel(logging.INFO)
@@ -20,6 +22,7 @@ hdl.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
 logger.addHandler(hdl)
 logger.setLevel(logging.INFO)
 logger.propagate = False
+coloredlogs.install(logger=logger)
 
 # FIXME: avoid global
 logger = logging.getLogger('ploceus.helper')

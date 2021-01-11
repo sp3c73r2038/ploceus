@@ -11,6 +11,7 @@ setup(
         'PyYAML',
         'Jinja2',
         'terminaltables',
+        'coloredlogs',
     ],
     entry_points="""
     [console_scripts]

@@ -42,6 +42,7 @@ class Context(dict):
 
             username = self['username']
             hostname = self['host_string']
+            port = self['ssh_port']
             password = self['password']
 
             from ploceus.runtime import env
@@ -51,6 +52,7 @@ class Context(dict):
                 hostname,
                 username=username,
                 password=password,
+                port=port,
                 gateway=gateway)
 
             self['username'] = username

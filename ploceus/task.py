@@ -58,10 +58,11 @@ class Task(object):
 
     func = None
     ssh_user = None
+    ssh_port = None
     name = None
     local_mode = False
 
-    def __init__(self, func, ssh_user=None, *args, **options):
+    def __init__(self, func, ssh_user=None, ssh_port=None, *args, **options):
         """create a ``Task'' object, register it to global store
         """
         def new_func(*_args, **_kwargs):
@@ -74,6 +75,7 @@ class Task(object):
         self.wrapped = func
         self.func = new_func
         self.ssh_user = ssh_user
+        self.ssh_port = ssh_port
         if options.get('local_mode'):
             self.local_mode = True
 

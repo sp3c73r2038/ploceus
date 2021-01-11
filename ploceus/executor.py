@@ -111,23 +111,32 @@ def run_task(tasks, hosts,
 
     ts = time.time()
 
+    options = {}
+    if username:
+        options['username'] = username
+    if password:
+        options['password'] = password
+
     results = []
     for task in tasks:
         pool = ThreadPoolExecutor(max_workers=concurrency)
         tracking = []
 
         for host in hosts:
+            hostname = host
+            if isinstance(host, dict):
+                hostname = host['host']
+                options['_hostname'] = host.get('name')
             # entry from cli will be a Task instance
             # otherwise, just wrap it with a new Task
             if not isinstance(task, Task):
                 task = Task(task)
 
             future = pool.submit(
-                execute, task, host,
-                    kwargs=kwargs,
-                    extra_vars=extra_vars,
-                    username=username,
-                    password=password,
+                execute, task, hostname,
+                kwargs=kwargs,
+                extra_vars=extra_vars,
+                **options,
             )
             tracking.append(future)
 
@@ -208,11 +217,15 @@ def processResult(results, realTime):
 
 
 def execute(task, hostname, **options):
+    # import pprint
+    # pprint.pprint("===========")
+    # pprint.pprint(options)
+    # pprint.pprint("===========")
     extra_vars = options.pop('extra_vars', {})
     kwargs = options.pop('kwargs', {})
     username = options.pop('username', task.ssh_user)
     password = options.pop('password', None)
-
+    port = options.pop('ssh_port', task.ssh_port)
 
     context = new_context()
 
@@ -221,10 +234,20 @@ def execute(task, hostname, **options):
         if not username:
             username = _
 
+    if ':' in hostname:
+        hostname, port = hostname.split(':', 1)
+        port = int(port)
+
     # prepare context
     context['password'] = password
     context['username'] = username
     context['host_string'] = hostname
+    context['_hostname'] = options.get('_hostname') or hostname
+    context['ssh_port'] = port
+    # import pprint
+    # pprint.pprint("===========")
+    # pprint.pprint(context)
+    # pprint.pprint("===========")
 
     sshclient = None
     if not task.local_mode:

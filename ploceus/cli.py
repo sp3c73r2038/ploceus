@@ -7,7 +7,7 @@ import time
 
 import terminaltables
 
-from ploceus import g
+from ploceus import g, setup
 from ploceus import ploceusfile
 import ploceus.colors as color
 from ploceus.exceptions import ArgumentError
@@ -118,7 +118,8 @@ class PloceusCLI(object):
 
         # FIXME: 加载 inventory 根据配置走
         g.inventory = Inventory(options.inventory)
-        g.inventory.setup()
+        setup()
+        # g.inventory.setup()
 
         if options.list_inventory:
             if g.inventory.empty:

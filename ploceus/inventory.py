@@ -71,7 +71,16 @@ class Inventory(object):
         if group is None:
             raise NoGroupFoundError('no group named %s found' % group_name)
 
-        return group
+        rv = dict(group)
+        # check only
+        for el in group['hosts']:
+            if isinstance(el, dict):
+                pass
+            elif isinstance(el, str):
+                pass
+            else:
+                raise RuntimeError("element in hosts should be str or dict")
+        return rv
 
 
     def get_target_host(self, hostname):
