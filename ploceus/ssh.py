@@ -57,6 +57,7 @@ class SSHClient(object):
                     cls = paramiko.dsskey.DSSKey
                 elif ident.lower().endswith('ed25519'):
                     cls = paramiko.ed25519key.Ed25519Key
+                logger.debug("loading pkey from %s", ident)
                 key = cls.from_private_key_file(ident)
                 if self._auth_by_key(transport, username, key):
                     return
@@ -75,6 +76,7 @@ class SSHClient(object):
                 else:
                     msg = 'unsupported keytype {}'.format(ktype)
                     raise ValueError(msg)
+                logger.debug("loading pkey from %s", path)
                 key = cls.from_private_key_file(path, passphrase)
                 if self._auth_by_key(transport, username, key):
                     return
@@ -92,6 +94,7 @@ class SSHClient(object):
         path = expanduser('~/.ssh/id_rsa')
         if isfile(path):
             try:
+                logger.debug("loading pkey from %s", path)
                 key = paramiko.rsakey.RSAKey.from_private_key_file(path)
                 if self._auth_by_key(transport, username, key):
                     return

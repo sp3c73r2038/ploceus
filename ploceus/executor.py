@@ -123,17 +123,17 @@ def run_task(tasks, hosts,
         tracking = []
 
         for host in hosts:
-            hostname = host
+            connection = host
             if isinstance(host, dict):
-                hostname = host['host']
-                options['_hostname'] = host.get('name')
+                connection = host['connection']
+                options['_hostname'] = host.get('name', connection)
             # entry from cli will be a Task instance
             # otherwise, just wrap it with a new Task
             if not isinstance(task, Task):
                 task = Task(task)
 
             future = pool.submit(
-                execute, task, hostname,
+                execute, task, connection,
                 kwargs=kwargs,
                 extra_vars=extra_vars,
                 **options,
@@ -216,7 +216,7 @@ def processResult(results, realTime):
     print('')
 
 
-def execute(task, hostname, **options):
+def execute(task, connection, **options):
     # import pprint
     # pprint.pprint("===========")
     # pprint.pprint(options)
@@ -229,8 +229,9 @@ def execute(task, hostname, **options):
 
     context = new_context()
 
-    if '@' in hostname:
-        _, hostname = hostname.split('@', maxsplit=1)
+    hostname = connection
+    if '@' in connection:
+        _, hostname = connection.split('@', maxsplit=1)
         if not username:
             username = _
 
@@ -239,6 +240,7 @@ def execute(task, hostname, **options):
         port = int(port)
 
     # prepare context
+    context['connection'] = connection  # 2021-01-14
     context['password'] = password
     context['username'] = username
     context['host_string'] = hostname
@@ -267,8 +269,13 @@ def execute(task, hostname, **options):
     context = scope.pop()
 
     rv.task = task
-    rv.hostname = hostname
     rv.timecost = te - ts
+
+    # 2021-01-14 human readable hostname without
+    # user, password, port
+    rv.hostname = context['_hostname']
+    rv.connection = connection
+
     if sshclient:
         rv.sshclient = sshclient
 

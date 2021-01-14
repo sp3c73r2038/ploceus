@@ -211,7 +211,7 @@ class PloceusCLI(object):
         # FIXME: buggy result
         title = 'execution result'
 
-        tableData = [['Hostname', 'Result OK', 'timecost(s)']]
+        tableData = [['Hostname', 'Connection', 'Result OK', 'timecost(s)']]
 
         print('')
         print('')
@@ -222,7 +222,10 @@ class PloceusCLI(object):
             if not result.ok:
                 c = color.red
                 s = 'NG'
-            row = [c(x) for x in [hostname, s, '{:.3f}'.format(result.timecost)]]
+            fields = [
+                hostname, result.connection,
+                s, '{:.3f}'.format(result.timecost)]
+            row = [c(x) for x in fields]
             totalTimecost += result.timecost
             tableData.append(row)
         table = terminaltables.AsciiTable(tableData, title)

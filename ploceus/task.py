@@ -24,6 +24,7 @@ class TaskResult(object):
         self.hostname = None
         self.timecost = None
         self.sshclient = None
+        self.connection = None  # 2021-01-14
 
     @property
     def failed(self):

@@ -24,7 +24,6 @@ g = GlobalStore()
 
 
 def setup():
-    g.inventory.setup()
 
     debug = os.environ.get('PLOCEUS_DEBUG')
     import pprint
@@ -40,3 +39,5 @@ def setup():
         # for h in logger.handlers:
         #     h.setFormatter(f)
         #     h.setLevel(logging.DEBUG)
+
+    g.inventory.setup()

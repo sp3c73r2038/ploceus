@@ -12,6 +12,8 @@ from ploceus.helper import local, run, sudo
 from ploceus.logger import log
 from ploceus.runtime import context_manager, env
 
+LOGGER = logging.getLogger(__name__)
+
 
 def _jinja_make_globals(t):
     _globals = dict(max=max)
@@ -156,41 +158,51 @@ def upload_file(dest, src=None, contents=None,
             'localpath: "{}" not exists, or not a file'.format(localpath))
 
     # avoid duplicating upload
+    should_upload = True
     if is_file(dest):
         # only check when dest existing
         remote_checksum = sha1sum(dest)
         local_checksum = py_sha1sum(localpath)
+        LOGGER.debug("remote sha1sum:  %s ", remote_checksum)
+        LOGGER.debug("local sha1sum:  %s ", local_checksum)
         if remote_checksum == local_checksum:
-            return
+            should_upload = False
 
-    origin_dest = dest
-    h = hashlib.sha1()
-    h.update(context['host_string'].encode('ascii'))
-    h.update(dest.encode('utf-8'))
-    dest = os.path.join(temp_dir, h.hexdigest())
+    if should_upload:
+        origin_dest = dest
+        h = hashlib.sha1()
+        h.update(context['host_string'].encode('ascii'))
+        h.update(dest.encode('utf-8'))
+        dest = os.path.join(temp_dir, h.hexdigest())
 
-    ssh.sftp.put(localpath, dest)
+        ssh.sftp.put(localpath, dest)
 
-    if t is not None:
-        os.unlink(localpath)
+        if t is not None:
+            os.unlink(localpath)
 
-    use_install = False
-    if run('command -v install', _raise=False, quiet=True, silence=True).ok:
-        use_install = True
+        use_install = False
+        if run('command -v install', _raise=False, quiet=True, silence=True).ok:
+            use_install = True
 
-    _ = use_sudo and sudo or run
-    if use_install:
-        install_mode = '-m644'
-        if mode:
-            install_mode = '-m{}'.format(mode)
-        cmd = 'install {} {} {}'.format(install_mode, dest, origin_dest)
-        _(cmd, quiet=True, silence=True)
-    else:
-        if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
-            chown(dest, user, grp, use_sudo=use_sudo)
-        if mode and (_mode(dest) != mode):
-            chmod(dest, mode, use_sudo=use_sudo)
-        _('mv %s %s' % (dest, origin_dest), quiet=True, silence=True)
+        _ = use_sudo and sudo or run
+        if use_install:
+            install_mode = '-m644'
+            if mode:
+                install_mode = '-m{}'.format(mode)
+            cmd = 'install {} {} {}'.format(install_mode, dest, origin_dest)
+            _(cmd, quiet=True, silence=True)
+        else:
+            if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
+                chown(dest, user, grp, use_sudo=use_sudo)
+            if mode and (_mode(dest) != mode):
+                chmod(dest, mode, use_sudo=use_sudo)
+            _('mv %s %s' % (dest, origin_dest), quiet=True, silence=True)
+        return
+
+    if (user and (owner(dest) != user)) or (grp and (group(dest) != grp)):
+        chown(dest, user, grp, use_sudo=use_sudo)
+    if mode and (_mode(dest) != mode):
+        chmod(dest, mode, use_sudo=use_sudo)
 
 
 def upload_template(dest, template=None, contents=None,

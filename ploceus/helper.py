@@ -14,7 +14,12 @@ from ploceus.exceptions import LocalCommandError, RemoteCommandError
 from ploceus.runtime import context_manager, env
 from ploceus.logger import log, logger
 
+
 __all__ = ['run', 'sudo']
+
+
+LOGGER = logging.getLogger(__name__)
+
 
 
 class CommandResult(object):
@@ -342,6 +347,9 @@ def _run_command(command, quiet=False, _raise=True, silence=False):
 
     if not silence:
         log(wrapped_command, prefix=cyan('run'))
+
+    LOGGER.error(wrapped_command)
+
     stdin, stdout, stderr, rc = client.exec_command(
         wrapped_command, output_callback=cb)
 

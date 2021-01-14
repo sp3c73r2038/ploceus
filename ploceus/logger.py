@@ -32,7 +32,8 @@ def log(message, prefix=''):
     from ploceus.runtime import context_manager
 
     context = context_manager.get_context()
-    hostname = context.get('host_string', '')
+    # hostname = context.get('host_string', '')
+    hostname = context.get('_hostname', '')
 
     _ = '[%s] %s: %s' % (green(hostname), prefix, message)
     _logger = logging.getLogger('ploceus.helper')

@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
-import yaml
+import logging
 import os
+
+import yaml
 
 from ploceus.exceptions import NoGroupFoundError
 
 
+
+LOGGER = logging.getLogger(__name__)
 
 
 class Inventory(object):
@@ -47,7 +51,7 @@ class Inventory(object):
 
     def _parse_inventory(self, fname):
         with open(fname) as f:
-            return yaml.safe_load(f.read())
+            return yaml.safe_load(f.read()) or {}
 
     @property
     def empty(self):
