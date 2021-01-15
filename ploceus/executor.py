@@ -122,18 +122,19 @@ def run_task(tasks, hosts,
         pool = ThreadPoolExecutor(max_workers=concurrency)
         tracking = []
 
-        for host in hosts:
-            connection = host
-            if isinstance(host, dict):
-                connection = host['connection']
-                options['_hostname'] = host.get('name', connection)
+        for conn in hosts:
+            if isinstance(conn, str):
+                conn = {
+                    'name': conn,
+                    'connection': conn
+                }
             # entry from cli will be a Task instance
             # otherwise, just wrap it with a new Task
             if not isinstance(task, Task):
                 task = Task(task)
 
             future = pool.submit(
-                execute, task, connection,
+                execute, task, conn,
                 kwargs=kwargs,
                 extra_vars=extra_vars,
                 **options,
@@ -216,7 +217,7 @@ def processResult(results, realTime):
     print('')
 
 
-def execute(task, connection, **options):
+def execute(task, conn, **options):
     # import pprint
     # pprint.pprint("===========")
     # pprint.pprint(options)
@@ -229,9 +230,9 @@ def execute(task, connection, **options):
 
     context = new_context()
 
-    hostname = connection
-    if '@' in connection:
-        _, hostname = connection.split('@', maxsplit=1)
+    hostname = conn['connection']
+    if '@' in hostname:
+        _, hostname = hostname.split('@', maxsplit=1)
         if not username:
             username = _
 
@@ -240,12 +241,14 @@ def execute(task, connection, **options):
         port = int(port)
 
     # prepare context
-    context['connection'] = connection  # 2021-01-14
+    context['connection'] = conn['connection']  # 2021-01-15
     context['password'] = password
     context['username'] = username
     context['host_string'] = hostname
-    context['_hostname'] = options.get('_hostname') or hostname
+    context['_hostname'] = conn['name']
     context['ssh_port'] = port
+    context['ssh_keyfile'] = conn.get('ssh_keyfile')
+    context['ssh_passphrase'] = conn.get('ssh_passphrase')
     # import pprint
     # pprint.pprint("===========")
     # pprint.pprint(context)
@@ -274,7 +277,7 @@ def execute(task, connection, **options):
     # 2021-01-14 human readable hostname without
     # user, password, port
     rv.hostname = context['_hostname']
-    rv.connection = connection
+    rv.conn = conn
 
     if sshclient:
         rv.sshclient = sshclient

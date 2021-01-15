@@ -2,7 +2,7 @@
 import binascii
 import getpass
 import logging
-from os.path import expanduser, isfile
+from os.path import expanduser, expandvars, isfile
 from queue import Empty, Queue
 import socket
 from threading import Thread
@@ -42,6 +42,26 @@ class SSHClient(object):
                 pkey_paths.append(path)
 
         return pkey_paths
+
+
+    def _auth_by_keyfile(self, transport, username, keyfile, passphrase):
+        """
+        2021-01-15 added
+        """
+        ident = expandvars(expanduser(keyfile))
+        logger.debug('ident: {}'.format(ident))
+        cls = paramiko.rsakey.RSAKey
+        if ident.lower().endswith('rsa'):
+            cls = paramiko.rsakey.RSAKey
+        elif ident.lower().endswith('dsa'):
+            cls = paramiko.dsskey.DSSKey
+        elif ident.lower().endswith('ed25519'):
+            cls = paramiko.ed25519key.Ed25519Key
+        logger.debug("loading pkey from %s", ident)
+        key = cls.from_private_key_file(ident, passphrase)
+        if self._auth_by_key(transport, username, key):
+            return
+
 
     def _auto_auth(self, transport, username, config):
         # 0x0 IdentifyFile in ssh_config
@@ -154,7 +174,8 @@ class SSHClient(object):
             self._transport)
         return self._sftp
 
-    def connectDirectly(self, hostname, username, password, port):
+    def connectDirectly(
+            self, hostname, username, password, port, keyfile, passphrase):
         sflags = socket.SOCK_STREAM
         if hasattr(socket, 'SOCK_CLOEXEC'):
             sflags |= socket.SOCK_CLOEXEC
@@ -173,7 +194,11 @@ class SSHClient(object):
         host_sshconfig = self._sshconfig.lookup(hostname)
 
         if password is None:
-            self._auto_auth(self._transport, username, host_sshconfig)
+            if keyfile:
+                self._auth_by_keyfile(
+                    self._transport, username, keyfile, passphrase)
+            else:
+                self._auto_auth(self._transport, username, host_sshconfig)
         else:
             self._auth_by_password(self._transport, username, password)
 
@@ -186,8 +211,9 @@ class SSHClient(object):
         self._connected = True
         return username
 
-    def connectUsingGateway(self, gateway, hostname, username,
-                            password, port):
+    def connectUsingGateway(
+            self, gateway, hostname, username,
+            password, port, keyfile, passphrase):
 
         gwUser = ''
         if '@' in gateway:
@@ -221,7 +247,11 @@ class SSHClient(object):
         self._gwTransport.start_client()
 
         if password is None:
-            self._auto_auth(self._gwTransport, gwUser, host_sshconfig)
+            if keyfile:
+                self._auth_by_keyfile(
+                    self._gwTransport, gwUser, keyfile, passphrase)
+            else:
+                self._auto_auth(self._gwTransport, gwUser, host_sshconfig)
         else:
             self._auth_by_password(self._gwTransport, gwUser, password)
 
@@ -259,10 +289,15 @@ class SSHClient(object):
         return username
 
     def connect(self, hostname, username=None,
-                password=None, port=None, gateway=None):
+                password=None, port=None, gateway=None,
+                ssh_keyfile=None, ssh_passphrase=None):
 
         hostConfig = self._sshconfig.lookup(hostname)
         hostname = hostConfig['hostname']
+
+        # 2021-01-15
+        if not ssh_keyfile:
+            ssh_keyfile = hostConfig.get('identityfile')
 
         if username is None:
             username = hostConfig.get('user', getpass.getuser())
@@ -278,6 +313,8 @@ class SSHClient(object):
                 username=username,
                 password=password,
                 port=port,
+                keyfile=ssh_keyfile,
+                passphrase=ssh_passphrase,
             )
         else:
             return self.connectDirectly(
@@ -285,6 +322,8 @@ class SSHClient(object):
                 username=username,
                 password=password,
                 port=port,
+                keyfile=ssh_keyfile,
+                passphrase=ssh_passphrase,
             )
 
     # Set get_pty to False will not allocate a Pseudo-terminal

@@ -6,6 +6,7 @@ import sys
 import time
 
 import terminaltables
+import yaml
 
 from ploceus import g, setup
 from ploceus import ploceusfile
@@ -15,6 +16,9 @@ from ploceus.executor import run_task
 from ploceus.inventory import Inventory
 from ploceus.logger import logger
 from ploceus.runtime import env
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PloceusCLI(object):
@@ -82,6 +86,10 @@ class PloceusCLI(object):
             action='append', default=[],
         )
         ap.add_argument(
+            '--break-on-error', help='break on any exceptions',
+            action='store_true',
+        )
+        ap.add_argument(
             'task_name', nargs='?',
             help='task name to carry out')
 
@@ -95,6 +103,7 @@ class PloceusCLI(object):
 
         results, timecost = self._run(*_)
         self.processResult(results, timecost)
+        self.post(results, timecost)
         return 0
 
     def _prepare(self):
@@ -163,6 +172,11 @@ class PloceusCLI(object):
         if options.quiet:
             env.keep_quiet = True
 
+        env.break_on_error = False
+        if options.break_on_error:
+            # 2021-01-15 cli usage will handle exception, do not break default
+            env.break_on_error = True
+
         # FIXME: 临时措施
         return (task, hosts, ploceus_filename, options, extra_vars, kwargs)
 
@@ -216,14 +230,16 @@ class PloceusCLI(object):
         print('')
         print('')
         totalTimecost = 0
+        errcount = 0
         for hostname, result in results.items():
             c = color.green
             s = 'OK'
             if not result.ok:
                 c = color.red
                 s = 'NG'
+                errcount += 1
             fields = [
-                hostname, result.connection,
+                hostname, result.conn['connection'],
                 s, '{:.3f}'.format(result.timecost)]
             row = [c(x) for x in fields]
             totalTimecost += result.timecost
@@ -240,9 +256,31 @@ class PloceusCLI(object):
         print(' ' * indent + ' real timecost: {:.3f}s'.format(realTime))
         print(' ' * indent + 'speed up: {:.1f}x'.format(
             totalTimecost / realTime))
+        print(' ' * indent + 'total hosts: {}'.format(len(results)))
+        print(' ' * indent + 'ok: {}'.format(
+            color.green(str(len(results) - errcount))))
+        if errcount > 0:
+            print(' ' * indent + 'err: {}'.format(
+                color.red(str(errcount))))
         print('')
         print('')
 
+    def post(self, results, timecost):
+        # post-action
+        hosts = []
+        for rt in results.values():
+            if rt.ok:
+                continue
+            hosts.append(rt.conn)
+        if len(hosts) <= 0:
+            return
+        hosts = sorted(hosts, key=lambda x: x['name'])
+        content = "# -*- mode: yaml -*-\n---\n{}\n".format(
+            yaml.safe_dump({'failed': {'hosts': hosts}}))
+        fn = '.last-failed'
+        with open(fn, 'w') as f:
+            f.write(content)
+        LOGGER.warning("There are failed hosts, inventory written to %s", fn)
 
 def main():
     cli = PloceusCLI()
