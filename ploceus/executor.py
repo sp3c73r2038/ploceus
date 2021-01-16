@@ -5,6 +5,7 @@ import os
 import time
 
 import terminaltables
+import tqdm
 
 from ploceus import g
 from ploceus import colors as color
@@ -119,8 +120,23 @@ def run_task(tasks, hosts,
 
     results = []
     for task in tasks:
+        ## FIXME: tasks progress
         pool = ThreadPoolExecutor(max_workers=concurrency)
         tracking = []
+
+        class NullProgress:
+            def update(self, *args, **kwargs):
+                pass
+            def close(self, *args, **kwargs):
+                pass
+
+        bar = NullProgress()
+        if cli_options['progress']:
+            bar = tqdm.tqdm(total=len(hosts), ncols=60)
+
+        def progress_callback(future):
+            if cli_options['progress']:
+                bar.update(1)
 
         for conn in hosts:
             if isinstance(conn, str):
@@ -139,6 +155,7 @@ def run_task(tasks, hosts,
                 extra_vars=extra_vars,
                 **options,
             )
+            future.add_done_callback(progress_callback)
             tracking.append(future)
 
             # FIXME: sleep is only useful in pool, not here
@@ -154,6 +171,8 @@ def run_task(tasks, hosts,
             if not future.running():
                 ex = future.exception()
                 results.append(ex)
+
+        bar.close()
 
     # close all ssh client connections
     for rt in results:

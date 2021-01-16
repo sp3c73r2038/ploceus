@@ -12,6 +12,7 @@ setup(
         'Jinja2',
         'terminaltables',
         'coloredlogs',
+        'tqdm',
     ],
     entry_points="""
     [console_scripts]

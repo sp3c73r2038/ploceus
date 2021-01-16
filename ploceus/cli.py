@@ -90,6 +90,9 @@ class PloceusCLI(object):
             action='store_true',
         )
         ap.add_argument(
+            '--progress', action='store_true', help='progress bar',
+        )
+        ap.add_argument(
             'task_name', nargs='?',
             help='task name to carry out')
 
