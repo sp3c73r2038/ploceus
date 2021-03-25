@@ -134,10 +134,6 @@ def run_task(tasks, hosts,
         if cli_options['progress']:
             bar = tqdm.tqdm(total=len(hosts), ncols=60)
 
-        def progress_callback(future):
-            if cli_options['progress']:
-                bar.update(1)
-
         for conn in hosts:
             if isinstance(conn, str):
                 conn = {
@@ -153,9 +149,9 @@ def run_task(tasks, hosts,
                 execute, task, conn,
                 kwargs=kwargs,
                 extra_vars=extra_vars,
+                bar=bar,
                 **options,
             )
-            future.add_done_callback(progress_callback)
             tracking.append(future)
 
             # FIXME: sleep is only useful in pool, not here
@@ -236,7 +232,7 @@ def processResult(results, realTime):
     print('')
 
 
-def execute(task, conn, **options):
+def execute(task, conn, bar=None, **options):
     # import pprint
     # pprint.pprint("===========")
     # pprint.pprint(options)
@@ -289,6 +285,9 @@ def execute(task, conn, **options):
     rv = task.run(extra_vars=extra_vars, **kwargs)
     te = time.time()
     context = scope.pop()
+
+    if bar:
+        bar.update(1)
 
     rv.task = task
     rv.timecost = te - ts

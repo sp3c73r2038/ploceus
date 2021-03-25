@@ -17,5 +17,5 @@ setup(
     entry_points="""
     [console_scripts]
     ploceus=ploceus.cli:main
-"""
+""",
 )
