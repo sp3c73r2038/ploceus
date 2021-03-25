@@ -11,7 +11,7 @@ import paramiko
 
 from ploceus.runtime import env
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class SSHClient(object):
@@ -21,17 +21,57 @@ class SSHClient(object):
         self._transport = None
         self._gwTransport = None
         self._sftp = None
-        self._sshconfig = paramiko.SSHConfig()
 
-        self._read_ssh_config()
-
-    def _read_ssh_config(self):
-        fn = expanduser('~/.ssh/config')
-        if not isfile(fn):
-            return
-
+    def _parse_ssh_config(self, fn):
+        includes = []
         with open(fn) as f:
-            self._sshconfig.parse(f)
+            for line in f:
+                if line.lower().startswith('include'):
+                    _, value = self._parse_ssh_config_line(line)
+                    includes.append(value)
+
+        conf = paramiko.SSHConfig.from_path(fn)
+        return conf, includes
+
+    def _parse_ssh_config_line(self, line):
+        m = paramiko.SSHConfig.SETTINGS_REGEX.match(line)
+        if not m:
+            raise paramiko.ssh_exception.ConfigParseError(
+                "Unparsable line {}".format(line))
+        key = m.group(1).lower()
+        value = m.group(2)
+        return key, value
+
+    def _get_ssh_config(self, hostname):
+        # FIXME: parse caching?
+        fn = expandvars(expanduser('${HOME}/.ssh/config'))
+        LOGGER.debug('[sshconfig] parsing %s', fn)
+        if not isfile(fn):
+            return {}
+
+        # 0x00 ${HOME}/.ssh/config
+        conf, next_includes = self._parse_ssh_config(fn)
+        LOGGER.debug("next_includes: %s", next_includes)
+
+        # 0x01 lookup hostname
+        rv = conf.lookup(hostname)
+
+        # 0x02 recursive loading top level Include's
+        while next_includes:
+            new_includes = []
+            for include in next_includes:
+                fn = expandvars(expanduser(include))
+                LOGGER.debug('[sshconfig] parsing %s', fn)
+                if not isfile(fn):
+                    continue
+
+                conf, includes = self._parse_ssh_config(fn)
+                hostconf = conf.lookup(hostname)
+                rv.update(hostconf)
+                new_includes += includes
+            next_includes = new_includes
+
+        return rv
 
     def _get_local_pkey_paths(self):
         pkey_fns = {'id_rsa', 'id_ed25519'}
@@ -44,32 +84,37 @@ class SSHClient(object):
         return pkey_paths
 
 
-    def _auth_by_keyfile(self, transport, username, keyfile, passphrase):
+    def _auth_by_keyfile(self, transport, username, keyfiles, passphrase):
         """
         2021-01-15 added
+
+        2021-03-25 FIXME: strict param type
         """
-        ident = expandvars(expanduser(keyfile))
-        logger.debug('ident: {}'.format(ident))
-        cls = paramiko.rsakey.RSAKey
-        if ident.lower().endswith('rsa'):
+        if isinstance(keyfiles, str):
+            keyfiles = [keyfiles]
+        for keyfile in keyfiles:
+            ident = expandvars(expanduser(keyfile))
+            LOGGER.debug('ident: {}'.format(ident))
             cls = paramiko.rsakey.RSAKey
-        elif ident.lower().endswith('dsa'):
-            cls = paramiko.dsskey.DSSKey
-        elif ident.lower().endswith('ed25519'):
-            cls = paramiko.ed25519key.Ed25519Key
-        logger.debug("loading pkey from %s", ident)
-        key = cls.from_private_key_file(ident, passphrase)
-        if self._auth_by_key(transport, username, key):
-            return
+            if ident.lower().endswith('rsa'):
+                cls = paramiko.rsakey.RSAKey
+            elif ident.lower().endswith('dsa'):
+                cls = paramiko.dsskey.DSSKey
+            elif ident.lower().endswith('ed25519'):
+                cls = paramiko.ed25519key.Ed25519Key
+            LOGGER.debug("loading pkey from %s", ident)
+            key = cls.from_private_key_file(ident, passphrase)
+            if self._auth_by_key(transport, username, key):
+                return
 
 
     def _auto_auth(self, transport, username, config):
         # 0x0 IdentifyFile in ssh_config
         if 'identityfile' in config:
-            logger.debug('auth identityfile')
+            LOGGER.debug('auth identityfile')
             idents = config['identityfile']
             for ident in idents:
-                logger.debug('ident: {}'.format(ident))
+                LOGGER.debug('ident: {}'.format(ident))
                 cls = paramiko.rsakey.RSAKey
                 if ident.lower().endswith('rsa'):
                     cls = paramiko.rsakey.RSAKey
@@ -77,14 +122,14 @@ class SSHClient(object):
                     cls = paramiko.dsskey.DSSKey
                 elif ident.lower().endswith('ed25519'):
                     cls = paramiko.ed25519key.Ed25519Key
-                logger.debug("loading pkey from %s", ident)
+                LOGGER.debug("loading pkey from %s", ident)
                 key = cls.from_private_key_file(ident)
                 if self._auth_by_key(transport, username, key):
                     return
 
         # 0x1 env.ssh_pkeys
         if env.ssh_pkeys:
-            logger.debug('auth env.ssh_keys')
+            LOGGER.debug('auth env.ssh_keys')
             for ktype, path, passphrase in env.ssh_pkeys:
                 path = expanduser(path)
                 if ktype.lower().endswith('rsa'):
@@ -96,13 +141,13 @@ class SSHClient(object):
                 else:
                     msg = 'unsupported keytype {}'.format(ktype)
                     raise ValueError(msg)
-                logger.debug("loading pkey from %s", path)
+                LOGGER.debug("loading pkey from %s", path)
                 key = cls.from_private_key_file(path, passphrase)
                 if self._auth_by_key(transport, username, key):
                     return
 
         # 0x2 agent keys
-        logger.debug('auth ssh-agent')
+        LOGGER.debug('auth ssh-agent')
         agent = paramiko.Agent()
         for key in agent.get_keys():
             if self._auth_by_key(transport, username, key):
@@ -110,11 +155,11 @@ class SSHClient(object):
 
         # 0x3 frequently used keys
         # id_rsa
-        logger.debug('auth ~/.ssh/id_rsa')
+        LOGGER.debug('auth ~/.ssh/id_rsa')
         path = expanduser('~/.ssh/id_rsa')
         if isfile(path):
             try:
-                logger.debug("loading pkey from %s", path)
+                LOGGER.debug("loading pkey from %s", path)
                 key = paramiko.rsakey.RSAKey.from_private_key_file(path)
                 if self._auth_by_key(transport, username, key):
                     return
@@ -122,7 +167,7 @@ class SSHClient(object):
                 pass
 
         # id_dsa
-        logger.debug('auth ~/.ssh/id_dsa')
+        LOGGER.debug('auth ~/.ssh/id_dsa')
         path = expanduser('~/.ssh/id_dsa')
         if isfile(path):
             try:
@@ -133,7 +178,7 @@ class SSHClient(object):
                 pass
 
         # id_ed25519
-        logger.debug('auth ~/.ssh/id_ed25519')
+        LOGGER.debug('auth ~/.ssh/id_ed25519')
         path = expanduser('~/.ssh/id_ed25519')
         if isfile(path):
             try:
@@ -152,7 +197,7 @@ class SSHClient(object):
         """
         rv = False
         fp = binascii.hexlify(key.get_fingerprint())
-        logger.debug('auth using key: {}'.format(fp.decode()))
+        LOGGER.debug('auth using key: {}'.format(fp.decode()))
         try:
             transport.auth_publickey(username, key)
             if transport.is_authenticated():
@@ -185,13 +230,13 @@ class SSHClient(object):
 
         sock.settimeout(env.ssh_timeout)
 
-        logger.debug('connecting to %s@%s:%s' % (username, hostname, port))
+        LOGGER.debug('connecting to %s@%s:%s' % (username, hostname, port))
 
         sock.connect((hostname, port))
         self._transport = paramiko.transport.Transport(sock)
         self._transport.start_client()
 
-        host_sshconfig = self._sshconfig.lookup(hostname)
+        host_sshconfig = self._get_ssh_config(hostname)
 
         if password is None:
             if keyfile:
@@ -219,7 +264,7 @@ class SSHClient(object):
         if '@' in gateway:
             gwUser, gateway = gateway.split('@', 1)
 
-        host_sshconfig = self._sshconfig.lookup(gateway)
+        host_sshconfig = self._get_ssh_config(gateway)
 
         sflags = socket.SOCK_STREAM
         if hasattr(socket, 'SOCK_CLOEXEC'):
@@ -233,7 +278,7 @@ class SSHClient(object):
         gwHost = host_sshconfig['hostname']
         gwPort = int(host_sshconfig.get('port', 22))
 
-        logger.debug('connecting to %s@%s using gateway %s@%s' % (
+        LOGGER.debug('connecting to %s@%s using gateway %s@%s' % (
             username,
             hostname,
             gwUser,
@@ -292,7 +337,7 @@ class SSHClient(object):
                 password=None, port=None, gateway=None,
                 ssh_keyfile=None, ssh_passphrase=None):
 
-        hostConfig = self._sshconfig.lookup(hostname)
+        hostConfig = self._get_ssh_config(hostname)
         hostname = hostConfig['hostname']
 
         # 2021-01-15
@@ -305,7 +350,7 @@ class SSHClient(object):
         port = port or int(hostConfig.get('port', 22))
 
         if gateway:
-            logger.debug(gateway)
+            LOGGER.debug(gateway)
 
             return self.connectUsingGateway(
                 gateway=gateway,
